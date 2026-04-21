@@ -1,0 +1,136 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Rose Blush Bouquet",
+      "category": "Flowers",
+      "mood": "Romantic",
+      "price": 34.99,
+      "tag": "Bestseller",
+      "tagColor": "bg-rose-100 text-rose-700",
+      "image": "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?w=600&auto=format&fit=crop",
+      "description": "Soft blush roses arranged in a hand-tied country style."
+    },
+    {
+      "id": 2,
+      "name": "Garden Wildflowers",
+      "category": "Flowers",
+      "mood": "Energizing",
+      "price": 28.5,
+      "tag": "New",
+      "tagColor": "bg-green-100 text-green-700",
+      "image": "https://images.unsplash.com/photo-1490750967868-88df5691cc5f?w=600&auto=format&fit=crop",
+      "description": "A vibrant mix of seasonal wildflowers from local gardens."
+    },
+    {
+      "id": 3,
+      "name": "Lavender Dreams",
+      "category": "Flowers",
+      "mood": "Calm",
+      "price": 26.0,
+      "tag": null,
+      "tagColor": "",
+      "image": "https://images.unsplash.com/photo-1595351298020-038700609878?w=600&auto=format&fit=crop",
+      "description": "Calming lavender sprigs tied with a natural linen ribbon."
+    },
+    {
+      "id": 4,
+      "name": "Cozy Comfort Hamper",
+      "category": "Hampers",
+      "mood": "Cozy",
+      "price": 79.99,
+      "tag": "Bestseller",
+      "tagColor": "bg-amber-100 text-amber-700",
+      "image": "https://images.unsplash.com/photo-1607344645866-009c320b63e0?w=600&auto=format&fit=crop",
+      "description": "Filled with artisan cookies, herbal teas, and a scented candle."
+    },
+    {
+      "id": 5,
+      "name": "Floral Gift Hamper",
+      "category": "Hampers",
+      "mood": "Romantic",
+      "price": 94.0,
+      "tag": "Limited",
+      "tagColor": "bg-pink-100 text-pink-700",
+      "image": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop",
+      "description": "Fresh florals paired with gourmet treats in a keepsake basket."
+    },
+    {
+      "id": 6,
+      "name": "The Art of Slow Living",
+      "category": "Books",
+      "mood": "Calm",
+      "price": 19.99,
+      "tag": "New",
+      "tagColor": "bg-green-100 text-green-700",
+      "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop",
+      "description": "A beautifully illustrated guide to simplicity and calm."
+    },
+    {
+      "id": 7,
+      "name": "Botanical Journal",
+      "category": "Books",
+      "mood": "Cozy",
+      "price": 22.5,
+      "tag": null,
+      "tagColor": "",
+      "image": "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop",
+      "description": "Blank-page botanical journal with hand-pressed flower prints."
+    },
+    {
+      "id": 8,
+      "name": "Garden Poetry Collection",
+      "category": "Books",
+      "mood": "Romantic",
+      "price": 17.0,
+      "tag": null,
+      "tagColor": "",
+      "image": "https://images.unsplash.com/photo-1476275466078-4cdc8961-c3f8?w=600&auto=format&fit=crop",
+      "description": "Timeless poems celebrating nature, seasons, and solitude."
+    },
+    {
+      "id": 9,
+      "name": "Haven Latte Kit",
+      "category": "Café",
+      "mood": "Cozy",
+      "price": 38.0,
+      "tag": "Bestseller",
+      "tagColor": "bg-amber-100 text-amber-700",
+      "image": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&auto=format&fit=crop",
+      "description": "Specialty latte blends with a ceramic mug and cinnamon syrup."
+    },
+    {
+      "id": 10,
+      "name": "Matcha Ceremony Set",
+      "category": "Café",
+      "mood": "Energizing",
+      "price": 54.0,
+      "tag": "New",
+      "tagColor": "bg-green-100 text-green-700",
+      "image": "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=600&auto=format&fit=crop",
+      "description": "Premium ceremonial matcha with bamboo whisk and bowl."
+    },
+    {
+      "id": 11,
+      "name": "Rose & Oud Candle",
+      "category": "Candles",
+      "mood": "Romantic",
+      "price": 32.0,
+      "tag": "Bestseller",
+      "tagColor": "bg-rose-100 text-rose-700",
+      "image": "https://images.unsplash.com/photo-1603905430477-9b71a4abd01e?w=600&auto=format&fit=crop",
+      "description": "Hand-poured soy wax with warming rose and oud essential oils."
+    },
+    {
+      "id": 12,
+      "name": "Eucalyptus & Sage",
+      "category": "Candles",
+      "mood": "Calm",
+      "price": 27.5,
+      "tag": null,
+      "tagColor": "",
+      "image": "https://images.unsplash.com/photo-1602607157126-8e9d0e9e1afe?w=600&auto=format&fit=crop",
+      "description": "Clean, refreshing scent to purify and uplift any space."
+    }
+  ]
+}
