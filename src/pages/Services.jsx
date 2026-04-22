@@ -138,7 +138,7 @@ const Services = () => {
           Book a complimentary 30-minute consultation with our team to discuss
           your upcoming event or gifting needs.
         </p>
-        <button className="bg-[#c8a97e] text-white px-10 py-3 rounded-full font-medium shadow-xl hover:bg-[#a67c52] hover:scale-105 transition-all duration-300">
+            <button className="bg-[#c8a97e] text-white px-10 py-3 rounded-full font-medium shadow-xl hover:bg-[#a67c52] hover:scale-105 transition-all duration-300">
           Book Consultation
         </button>
       </section>
