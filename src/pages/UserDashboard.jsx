@@ -1,27 +1,131 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { io } from "socket.io-client";
+import { Trash2, ShoppingBag, Package, Activity as ActivityIcon, Settings } from "lucide-react";
+import { API_URL, SOCKET_URL } from "../config";
 
-const dummyActivities = [
-  { id: 1, action: "Purchased", item: "Rose Blush Bouquet", date: "Oct 12, 2026", price: "$34.99", status: "Delivered" },
-  { id: 2, action: "Added to Wishlist", item: "Haven Latte Kit", date: "Oct 10, 2026", price: "-", status: "-" },
-  { id: 3, action: "Reviewed", item: "Cozy Comfort Hamper", date: "Sep 28, 2026", price: "-", status: "5 Stars" },
-  { id: 4, action: "Purchased", item: "The Art of Slow Living", date: "Sep 15, 2026", price: "$19.99", status: "Delivered" },
-];
+// Dummy data removed. Real data should be fetched from the API.
 
-const dummyOrders = [
-  { id: "#ORD-1024", item: "Rose Blush Bouquet", date: "Oct 12, 2026", total: "$34.99", status: "Delivered", img: "https://images.unsplash.com/photo-1595351298020-038700609878?w=100&fit=crop" },
-  { id: "#ORD-1012", item: "The Art of Slow Living", date: "Sep 15, 2026", total: "$19.99", status: "Delivered", img: "https://images.unsplash.com/photo-1544716278-e513176f20b5?w=100&fit=crop" },
-  { id: "#ORD-0985", item: "Cozy Tea Set", date: "Aug 22, 2026", total: "$85.00", status: "Delivered", img: "https://images.unsplash.com/photo-1510265236892-329bfd7de7a1?w=100&fit=crop" },
-];
-
-const dummyWishlist = [
-  { id: 1, name: "Haven Latte Kit", price: "$45.00", status: "In Stock", img: "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=100&fit=crop" },
-  { id: 2, name: "Sunset Floral Pot", price: "$28.00", status: "Limited Stock", img: "https://images.unsplash.com/photo-1510265236892-329bfd7de7a1?w=100&fit=crop" },
-];
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState("Activity");
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const navigate = useNavigate();
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const [profileRes, ordersRes, activityRes] = await Promise.all([
+          fetch(`${API_URL}/api/user/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/api/orders/myorders`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/api/user/activity`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        ]);
+
+        if (!profileRes.ok) throw new Error("Failed to fetch profile");
+        
+        const profileData = await profileRes.json();
+        setUser(profileData.user);
+        setWishlistItems(profileData.user.wishlist || []);
+
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          setOrders(ordersData);
+        }
+
+        if (activityRes.ok) {
+          const activityData = await activityRes.json();
+          setActivities(activityData);
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Session expired, please login again");
+        localStorage.removeItem("token");
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
+
+  // Real-time Updates for User Dashboard
+  useEffect(() => {
+    const socket = io(SOCKET_URL);
+
+    socket.on("orderUpdated", (updatedOrder) => {
+      // Check if the update belongs to this user
+      if (user && (updatedOrder.user === user._id || updatedOrder.user?._id === user._id)) {
+        setOrders(prev => prev.map(order => 
+          order._id === updatedOrder._id ? updatedOrder : order
+        ));
+        toast.info(`📦 Order Status Updated: ${updatedOrder.status}`);
+      }
+    });
+
+    socket.on("newOrder", (newOrder) => {
+      // Add to list if it's the current user's new order
+      if (user && (newOrder.user === user._id || newOrder.user?._id === user._id)) {
+        setOrders(prev => [newOrder, ...prev]);
+      }
+    });
+
+    socket.on("activityUpdate", () => {
+      // Refresh activities when something new happens
+      const token = localStorage.getItem("token");
+      fetch(`${API_URL}/api/user/activity`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setActivities(data));
+    });
+
+    socket.on("wishlistUpdated", (data) => {
+      if (user && data.userId === user._id) {
+        const token = localStorage.getItem("token");
+        fetch(`${API_URL}/api/user/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(profileData => {
+          if (profileData.user) {
+            setUser(profileData.user);
+            setWishlistItems(profileData.user.wishlist || []);
+          }
+        });
+      }
+    });
+
+    return () => socket.disconnect();
+  }, [user]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    toast.success("Successfully logged out.", {
+      style: { background: '#f8f5f2', color: '#2d3a2d', border: '1px solid #c8a97e' },
+      iconTheme: { primary: '#a67c52', secondary: '#f8f5f2' },
+    });
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-[#f8f5f2]">
@@ -40,7 +144,9 @@ const UserDashboard = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-xl font-serif text-[#3e3e3e]">Sarah Jenkins</h2>
+              <h2 className="text-xl font-serif text-[#3e3e3e]">
+                {loading ? "Loading..." : user?.name || "Guest"}
+              </h2>
               <p className="text-sm text-[#8c8c73]">Member since 2025</p>
             </div>
 
@@ -61,7 +167,7 @@ const UserDashboard = () => {
             </nav>
             
             <div className="mt-8 pt-8 border-t border-[#e0d8ce]">
-              <button className="text-red-500 font-medium text-sm flex items-center gap-2 hover:text-red-700 transition-colors px-5">
+              <button onClick={handleLogout} className="text-red-500 font-medium text-sm flex items-center gap-2 hover:text-red-700 transition-colors px-5">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
                 </svg>
@@ -82,12 +188,15 @@ const UserDashboard = () => {
                 Welcome Back
               </span>
               <h1 className="text-4xl md:text-5xl font-serif text-[#3e3e3e] mb-4">
-                Hello, Sarah ✨
+                Hello, {loading ? "..." : user?.name?.split(" ")[0] || "Friend"} ✨
               </h1>
               <p className="text-gray-600 max-w-lg leading-relaxed">
-                We're glad to see you. You have <span className="font-bold text-[#a67c52]">2</span> items waiting in your wishlist and your recent order is on its way!
+                We're glad to see you. You have <span className="font-bold text-[#a67c52]">{wishlistItems.length}</span> items waiting in your wishlist and <span className="font-bold text-[#a67c52]">{orders.length}</span> total orders placed with us!
               </p>
-              <button className="mt-6 bg-[#3e3e3e] text-white px-6 py-2 rounded-full font-medium shadow-md hover:bg-green-800 transition-colors">
+              <button 
+                onClick={() => setActiveTab("My Orders")}
+                className="mt-6 bg-[#3e3e3e] text-white px-6 py-2 rounded-full font-medium shadow-md hover:bg-green-800 transition-colors"
+              >
                 Track Order
               </button>
             </div>
@@ -104,36 +213,24 @@ const UserDashboard = () => {
               </div>
 
               <div className="flex flex-col gap-4">
-                {dummyActivities.map((activity) => (
-                  <div key={activity.id} className="flex flex-col md:flex-row items-center justify-between p-5 rounded-2xl border border-transparent hover:border-[#e0d8ce] hover:bg-[#f8f5f2] transition-colors gap-4">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-inner ${
-                        activity.action === 'Purchased' ? 'bg-green-100 text-green-700' :
-                        activity.action === 'Added to Wishlist' ? 'bg-rose-100 text-rose-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {activity.action === 'Purchased' ? '🛍️' : activity.action === 'Added to Wishlist' ? '❤️' : '⭐'}
+                {activities.length > 0 ? activities.map((activity) => (
+                  <div key={activity._id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 hover:bg-[#fdfaf7] transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-sm">
+                        {activity.type === 'order' ? '📦' : activity.type === 'wishlist' ? '❤️' : '👤'}
                       </div>
                       <div>
-                        <p className="font-semibold text-[#3e3e3e]">{activity.action}: <span className="font-serif">{activity.item}</span></p>
-                        <p className="text-xs text-[#8c8c73]">{activity.date}</p>
+                        <h4 className="text-sm font-bold text-[#3e3e3e]">{activity.action}</h4>
+                        <p className="text-xs text-gray-500">{new Date(activity.createdAt).toLocaleString()}</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between w-full md:w-auto gap-8 text-right md:text-left">
-                      <div>
-                        <p className="text-xs text-[#8c8c73] uppercase tracking-widest">Price</p>
-                        <p className="font-medium text-[#3e3e3e]">{activity.price}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-[#8c8c73] uppercase tracking-widest">Status / Info</p>
-                        <p className={`font-medium ${activity.status === 'Delivered' ? 'text-green-700' : 'text-[#a67c52]'}`}>
-                          {activity.status}
-                        </p>
-                      </div>
-                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#a67c52] bg-white px-3 py-1 rounded-full border border-[#f0e8dc]">
+                      {activity.type}
+                    </span>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-12 text-gray-500 italic">No recent activity found.</div>
+                )}
               </div>
             </div>
           )}
@@ -143,24 +240,53 @@ const UserDashboard = () => {
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-[#e0d8ce]">
               <h3 className="text-2xl font-serif text-[#3e3e3e] mb-8">Purchase History</h3>
               <div className="flex flex-col gap-6">
-                {dummyOrders.map((order) => (
-                  <div key={order.id} className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border border-[#f0e8dc] hover:shadow-md transition-shadow">
-                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                      <img src={order.img} alt={order.item} className="w-full h-full object-cover" />
+                {orders.length > 0 ? orders.map((order) => (
+                  <div key={order._id} className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border border-[#f0e8dc] hover:shadow-md transition-shadow">
+                    <div className="w-20 h-20 bg-[#f8f5f2] rounded-xl flex items-center justify-center shrink-0 border border-[#e0d8ce]">
+                      <span className="text-2xl">📦</span>
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-serif text-lg text-[#3e3e3e]">{order.item}</h4>
-                        <span className="text-xs font-bold bg-green-100 text-green-700 px-3 py-1 rounded-full uppercase tracking-tighter">{order.status}</span>
+                        <div>
+                          <h4 className="font-bold text-[#3e3e3e]">Order #{order._id.slice(-8).toUpperCase()}</h4>
+                          <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                          order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
+                          order.status === 'Shipped' ? 'bg-blue-100 text-blue-700' : 
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {order.status}
+                        </span>
                       </div>
-                      <p className="text-sm text-gray-500 mb-4">Order ID: {order.id} • Placed on {order.date}</p>
-                      <div className="flex items-center justify-between">
-                         <span className="font-bold text-[#a67c52]">{order.total}</span>
-                         <button className="text-xs font-bold uppercase tracking-widest text-[#3e3e3e] border-b-2 border-transparent hover:border-[#a67c52] transition-all pb-1">Order Details</button>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">{order.orderItems.length} items</p>
+                        <p className="font-bold text-[#a67c52]">₹{order.totalPrice.toLocaleString('en-IN')}</p>
                       </div>
                     </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          const orderIdShort = order._id.slice(-8).toUpperCase();
+                          toast.success(`Generating Invoice for #${orderIdShort}...`, { icon: '📄' });
+                          // In a production app, this would open a PDF or a printable route
+                          // For now, we'll simulate the professional feel
+                          setTimeout(() => {
+                            window.print();
+                          }, 1000);
+                        }}
+                        className="px-5 py-2 bg-white text-[#3e3e3e] text-xs font-bold rounded-full border border-[#f0e8dc] hover:border-[#a67c52] transition-all uppercase tracking-widest"
+                      >
+                        Invoice
+                      </button>
+                      <Link to="/orders" className="px-5 py-2 bg-[#f8f5f2] text-[#a67c52] text-xs font-bold rounded-full border border-[#d4c4b0] hover:bg-[#a67c52] hover:text-white transition-all uppercase tracking-widest">
+                        Details
+                      </Link>
+                    </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-12 text-gray-500 italic">You haven't placed any orders yet.</div>
+                )}
               </div>
             </div>
           )}
@@ -170,22 +296,33 @@ const UserDashboard = () => {
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-[#e0d8ce]">
               <h3 className="text-2xl font-serif text-[#3e3e3e] mb-8">Saved For Later</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {dummyWishlist.map((item) => (
-                  <div key={item.id} className="group flex flex-col gap-4 p-4 rounded-2xl border border-[#f0e8dc] hover:scale-[1.02] transition-all">
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50">
-                      <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                      <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm text-rose-500">❤️</button>
+                {wishlistItems.length > 0 ? wishlistItems.map((item) => (
+                  <div key={item._id} className="group flex items-center gap-4 p-4 rounded-2xl border border-[#f0e8dc] hover:bg-[#fdfaf7] transition-all">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
+                      <img src={item.imageUrl || item.imageurl || item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
-                    <div>
-                      <h4 className="font-serif text-lg text-[#3e3e3e] mb-1">{item.name}</h4>
-                      <div className="flex justify-between items-center">
-                         <span className="font-bold text-[#a67c52]">{item.price}</span>
-                         <span className="text-[10px] uppercase font-bold tracking-widest text-green-600">{item.status}</span>
-                      </div>
-                      <button className="w-full mt-4 bg-[#3e3e3e] text-white py-2 rounded-lg text-sm font-medium hover:bg-green-800 transition-colors">Add to Cart</button>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-[#3e3e3e] truncate">{item.name || item.item_name}</h4>
+                      <p className="text-xs text-[#a67c52] font-bold">₹{(item.price || item.item_price || item.quantityOptions?.[0]?.price || 0).toLocaleString('en-IN')}</p>
                     </div>
+                    <button 
+                      onClick={() => {
+                        // Toggle wishlist to remove
+                        const token = localStorage.getItem("token");
+                        fetch(`${API_URL}/api/user/wishlist`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ productId: item._id })
+                        }).then(() => toast.success("Removed from Wishlist"));
+                      }}
+                      className="p-2 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                ))}
+                )) : (
+                  <div className="col-span-full text-center py-12 text-gray-500 italic">Your wishlist is currently empty.</div>
+                )}
               </div>
             </div>
           )}

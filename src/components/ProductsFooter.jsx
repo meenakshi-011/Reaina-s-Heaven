@@ -45,7 +45,9 @@ const ProductsFooter = () => {
             ].map((s) => (
               <a
                 key={s.name}
-                href="#"
+                href={s.name === "Instagram" ? "https://instagram.com/reainas_heaven" : "#"}
+                target={s.name === "Instagram" ? "_blank" : undefined}
+                rel={s.name === "Instagram" ? "noopener noreferrer" : undefined}
                 className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a67c52] hover:border-[#a67c52] hover:scale-110 transition-all duration-300 group"
                 aria-label={s.name}
               >
@@ -61,15 +63,29 @@ const ProductsFooter = () => {
         {[
           {
             title: "Shop",
-            links: ["Flowers", "Hampers", "Books", "Café Goods", "Candles"],
-          },
-          {
-            title: "Company",
-            links: ["About Us", "Our Story", "Sustainability", "Careers"],
+            links: [
+              { name: "Flowers", path: "/products" },
+              { name: "Café Goods", path: "/cafe" },
+              { name: "Books", path: "/books" },
+              { name: "Gift Hampers", path: "/products" },
+            ],
           },
           {
             title: "Support",
-            links: ["Contact Us", "FAQs", "Shipping Policy", "Returns"],
+            links: [
+              { name: "Contact Us", path: "/contactus" },
+              { name: "FAQs", path: "/faq" },
+              { name: "Shipping Policy", path: "/shipping-policy" },
+              { name: "Order Tracking", path: "/orders" },
+            ],
+          },
+          {
+            title: "Collaborate",
+            links: [
+              { name: "Partner With Us", path: "/contactus" },
+              { name: "Collab With Us", path: "/contactus" },
+              { name: "Become a Member", path: "/signup" },
+            ],
           },
         ].map((col) => (
           <div key={col.title}>
@@ -78,12 +94,12 @@ const ProductsFooter = () => {
             </h3>
             <ul className="space-y-2">
               {col.links.map((link) => (
-                <li key={link}>
+                <li key={link.name}>
                   <a
-                    href="#"
+                    href={link.path}
                     className="text-white/60 text-sm hover:text-white transition-colors duration-200"
                   >
-                    {link}
+                    {link.name}
                   </a>
                 </li>
               ))}

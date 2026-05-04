@@ -1,5 +1,9 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { useCart } from "../context/CartContext";
+import { io } from "socket.io-client";
+import { API_URL, SOCKET_URL } from "../config";
 
 const navLinks = [
   { label: "Home", to: "/" },
@@ -11,7 +15,7 @@ const navLinks = [
       {
         section: "Retail & Experiences",
         items: [
-          { name: "Books", to: "/products" },
+          { name: "Books", to: "/books" },
           { name: "Flowers", to: "/products" },
           { name: "Café Booking", to: "/services" }
         ]
@@ -37,7 +41,7 @@ const navLinks = [
   },
   { 
     label: "Café Menu", 
-    to: "#",
+    to: "/cafe",
     dropdown: [
       {
         items: [
@@ -69,19 +73,95 @@ const navLinks = [
   { label: "Contact Us", to: "/contactus" },
 ];
 
+
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const isLoggedIn = true; // Mocked logic: User is logged in
-  const isAdmin = true;     // Mocked logic: User is an admin
+  const [user, setUser] = useState(null);
+  const { cartItemsCount } = useCart();
+  const isAdmin = user?.role?.toUpperCase() === "SUPER_ADMIN" || user?.role?.toUpperCase() === "ADMIN"; 
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const res = await fetch(`${API_URL}/api/user/profile`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUser(data.user);
+          }
+        } catch (error) {
+          console.error("Error fetching user in navbar:", error);
+        }
+      }
+    };
+    fetchUser();
+  }, [location.pathname]);
+
+  // Global Real-time Notifications
+  useEffect(() => {
+    const socket = io(SOCKET_URL);
+
+    socket.on("newOrder", (order) => {
+      // Notify Admin
+      if (isAdmin) {
+        toast.success(`🎉 New Order! #${order._id.slice(-8).toUpperCase()}`, {
+          duration: 8000,
+          position: "top-right",
+          style: { background: '#2d3a2d', color: '#fff', border: '1px solid #c8a97e' },
+          icon: '📦'
+        });
+      }
+    });
+
+    socket.on("newSignup", (newUser) => {
+      // Notify Admin
+      if (isAdmin) {
+        toast.success(`👤 New Member: ${newUser.name}`, {
+          duration: 5000,
+          position: "top-right",
+          style: { background: '#a67c52', color: '#fff' },
+          icon: '✨'
+        });
+      }
+    });
+
+    socket.on("orderUpdated", (updatedOrder) => {
+      // Notify the specific User
+      if (user && (updatedOrder.user === user._id || updatedOrder.user?._id === user._id)) {
+        toast(`🚚 Order #${updatedOrder._id.slice(-8).toUpperCase()} Status: ${updatedOrder.status}`, {
+          duration: 8000,
+          position: "bottom-right",
+          style: { background: '#f8f5f2', color: '#2d3a2d', border: '2px solid #a67c52' },
+        });
+      }
+    });
+
+    return () => socket.disconnect();
+  }, [isAdmin, user]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setProfileOpen(false);
+    setUser(null);
+    toast.success("Successfully logged out.", {
+      style: { background: '#f8f5f2', color: '#2d3a2d', border: '1px solid #c8a97e' },
+      iconTheme: { primary: '#a67c52', secondary: '#f8f5f2' },
+    });
+    navigate("/login");
+  };
 
   return (
     <nav className="w-full bg-[#f8f5f2] shadow-md sticky top-0 z-40">
       <div className="w-full flex items-center justify-between px-6 lg:px-12 py-4">
 
         {/* LOGO */}
-        <Link to="/" className="text-2xl font-serif text-green-800 hover:opacity-80 transition-opacity">
+        <Link to="/" className="text-2xl font-serif text-green-800 hover:opacity-80 transition-opacity whitespace-nowrap">
           Reaina's Haven 🌿
         </Link>
 
@@ -146,24 +226,26 @@ const Navbar = () => {
         </div>
 
         {/* RIGHT SECTION */}
-        <div className="flex items-center gap-3">
-          {/* SEARCH */}
-          <input
-            type="text"
-            placeholder="Find a cozy gift…"
-            className="hidden xl:block px-4 py-2 w-48 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#a67c52]/30 bg-white"
-          />
-
-          {/* AI BUTTON */}
-          <button className="bg-[#c8a97e] text-white px-3 md:px-5 py-2 rounded-full text-[11px] md:text-sm shadow-md hover:scale-105 hover:bg-[#a67c52] transition-all duration-200 whitespace-nowrap">
-            Ask Haven AI ✨
-          </button>
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* SEARCH (Desktop only) */}
+          <div className="relative hidden xl:block">
+            <input
+              type="text"
+              placeholder="Find a cozy gift…"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  navigate(`/products?search=${e.target.value}`);
+                }
+              }}
+              className="px-4 py-2 w-48 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#a67c52]/30 bg-white transition-all"
+            />
+          </div>
 
           {/* CART ICON */}
-          <button className="relative w-9 h-9 bg-white border border-[#d4c4b0] rounded-full flex items-center justify-center shadow-sm hover:bg-[#f0e8dc] transition-colors duration-200">
+          <Link to="/cart" className="relative w-8 h-8 md:w-9 md:h-9 bg-white border border-[#d4c4b0] rounded-full flex items-center justify-center shadow-sm hover:bg-[#f0e8dc] transition-colors duration-200">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4 text-[#a67c52]"
+              className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#a67c52]"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
@@ -175,39 +257,58 @@ const Navbar = () => {
                 d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
               />
             </svg>
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[10px] flex items-center justify-center font-bold">
-              3
-            </span>
-          </button>
-
-          {/* PROFILE */}
-          <div className="relative">
-            {isLoggedIn ? (
-              <div 
-                className="w-9 h-9 bg-[#c8a97e] rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-sm cursor-pointer hover:bg-[#a67c52] transition-colors"
-                onClick={() => setProfileOpen(!profileOpen)}
-              >
-                R
-              </div>
-            ) : (
-              <button className="text-sm font-medium text-gray-700 hover:text-green-700">Login</button>
+            {cartItemsCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 md:w-4 md:h-4 bg-rose-500 text-white rounded-full text-[8px] md:text-[10px] flex items-center justify-center font-bold">
+                {cartItemsCount}
+              </span>
             )}
+          </Link>
 
-            {/* PROFILE DROPDOWN */}
-            {profileOpen && isLoggedIn && (
-              <div className="absolute right-0 mt-3 w-48 bg-white border border-[#e0d8ce] rounded-xl shadow-lg overflow-hidden py-2 focus:outline-none z-50">
-                <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f8f5f2] hover:text-green-800 transition-colors">
-                  User Dashboard
-                </Link>
-                {isAdmin && (
-                  <Link to="/admin" onClick={() => setProfileOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f8f5f2] hover:text-green-800 transition-colors">
-                    Admin Panel
-                  </Link>
-                )}
-                <div className="border-t border-[#e0d8ce] my-1"></div>
-                <button onClick={() => setProfileOpen(false)} className="block w-full text-left px-4 py-2 text-sm text-red-500 font-medium hover:bg-red-50 transition-colors">
+          {/* PROFILE & LOGOUT */}
+          <div className="flex items-center gap-2 md:gap-4">
+            {localStorage.getItem("token") ? (
+              <>
+                <div className="relative">
+                  <div 
+                    className="w-8 h-8 md:w-9 md:h-9 bg-[#c8a97e] rounded-full flex items-center justify-center text-white text-[10px] md:text-xs font-semibold shadow-sm cursor-pointer hover:bg-[#a67c52] transition-colors"
+                    onClick={() => setProfileOpen(!profileOpen)}
+                  >
+                    {user?.name ? user.name[0].toUpperCase() : "?"}
+                  </div>
+                  
+                  {/* PROFILE DROPDOWN */}
+                  {profileOpen && (
+                    <div className="absolute right-0 mt-3 w-40 md:w-48 bg-white border border-[#e0d8ce] rounded-xl shadow-lg overflow-hidden py-2 z-50">
+                      <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="block px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-[#f8f5f2] hover:text-green-800 transition-colors">
+                        User Dashboard
+                      </Link>
+                      <Link to="/orders" onClick={() => setProfileOpen(false)} className="block px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-[#f8f5f2] hover:text-green-800 transition-colors">
+                        My Orders
+                      </Link>
+                      {isAdmin && (
+                        <Link to="/admin" onClick={() => setProfileOpen(false)} className="block px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-[#f8f5f2] hover:text-green-800 transition-colors">
+                          Admin Panel
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <button 
+                  onClick={handleLogout} 
+                  className="hidden md:block text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-full border border-red-200 transition-colors"
+                >
                   Logout
                 </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <Link to="/login" className="text-[10px] md:text-sm font-medium text-gray-700 hover:text-green-700 bg-white/50 px-2.5 md:px-4 py-1.5 md:py-2 rounded-full border border-gray-200 transition-colors">
+                  Login
+                </Link>
+                <Link to="/signup" className="text-[10px] md:text-sm font-medium text-white bg-[#a67c52] hover:bg-[#8e6844] px-2.5 md:px-4 py-1.5 md:py-2 rounded-full transition-colors shadow-sm">
+                  Sign Up
+                </Link>
               </div>
             )}
           </div>
@@ -238,17 +339,83 @@ const Navbar = () => {
 
       {/* MOBILE MENU */}
       {menuOpen && (
-        <div className="md:hidden bg-[#f8f5f2] border-t border-[#e0d8ce] px-6 pb-5 pt-3 flex flex-col gap-3">
-          {navLinks.map(({ label, to }) => (
-            <Link
-              key={label}
-              to={to}
-              className="text-gray-700 text-sm font-medium py-1.5 hover:text-green-700 transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              {label}
-            </Link>
-          ))}
+        <div className="lg:hidden absolute top-full left-0 w-full h-[calc(100vh-64px)] bg-white/95 backdrop-blur-md z-50 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex flex-col p-8 gap-8">
+            
+            {/* Mobile Search */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search for gifts, cafe treats..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setMenuOpen(false);
+                    navigate(`/products?search=${e.target.value}`);
+                  }
+                }}
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-[#e0d8ce] bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#a67c52]/30"
+              />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#a67c52]"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+            </div>
+
+            <div className="flex flex-col gap-6">
+              {navLinks.map(({ label, to, dropdown }) => (
+                <div key={label} className="flex flex-col">
+                  <Link
+                    to={to}
+                    className="text-[#3e3e3e] text-2xl font-serif font-bold py-2 flex justify-between items-center group"
+                    onClick={() => !dropdown && setMenuOpen(false)}
+                  >
+                    <span className="group-hover:text-[#a67c52] transition-colors">{label}</span>
+                    {dropdown && <span className="text-[10px] bg-[#fdfaf7] px-3 py-1 rounded-full text-[#a67c52] font-sans uppercase tracking-widest border border-[#a67c52]/10">View All</span>}
+                  </Link>
+                  {dropdown && (
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 pl-4 border-l-2 border-[#fdfaf7]">
+                      {dropdown.flatMap(d => d.items).slice(0, 8).map((item, idx) => (
+                        <Link 
+                          key={idx} 
+                          to={item.to} 
+                          className="text-gray-500 text-sm py-1 hover:text-[#a67c52] transition-colors"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto pt-10 border-t border-gray-100 flex flex-col gap-4">
+              {!localStorage.getItem("token") ? (
+                <>
+                  <Link to="/login" onClick={() => setMenuOpen(false)} className="w-full text-center py-4 rounded-2xl bg-white border border-[#a67c52] text-[#a67c52] font-bold text-lg shadow-sm">Login</Link>
+                  <Link to="/signup" onClick={() => setMenuOpen(false)} className="w-full text-center py-4 rounded-2xl bg-[#a67c52] text-white font-bold text-lg shadow-lg">Create Account</Link>
+                </>
+              ) : (
+                <button 
+                  onClick={() => { handleLogout(); setMenuOpen(false); }} 
+                  className="w-full text-center py-4 rounded-2xl bg-rose-50 text-rose-600 font-bold text-lg border border-rose-100"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
+
+            <div className="text-center pb-10">
+              <p className="text-gray-400 text-xs font-medium tracking-widest uppercase">Reaina's Haven 🌿 Jabalpur</p>
+            </div>
+          </div>
         </div>
       )}
     </nav>

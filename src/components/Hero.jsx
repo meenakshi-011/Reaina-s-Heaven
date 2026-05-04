@@ -1,5 +1,5 @@
 import React from "react";
-
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -19,40 +19,43 @@ const Hero = () => {
           />
         </div>
 
-        {/* CENTER CONTENT - RESTORED HEADING */}
-        <div className="w-full md:w-[45%] text-center flex flex-col items-center">
-          <h1 className="text-5xl md:text-6xl font-serif text-[#3e3e3e] leading-tight mb-6">
-            Create Moments <br />
+        {/* CENTER CONTENT */}
+        <div className="w-full lg:w-[45%] text-center flex flex-col items-center py-12 md:py-0">
+          <span className="text-[#a67c52] uppercase tracking-[0.2em] md:tracking-[0.3em] text-[9px] md:text-[10px] font-bold mb-6 bg-[#a67c52]/10 px-4 py-1.5 rounded-full backdrop-blur-sm">
+            Est. 2024 • Reaina's Haven
+          </span>
+          <h1 className="text-[2.8rem] sm:text-5xl lg:text-7xl font-serif text-[#3e3e3e] leading-[1.1] mb-6 md:mb-8 tracking-tight">
+            Create Moments <br className="hidden sm:block" />
             of <span className="text-green-800 italic">Joy & Comfort</span> 🌿
           </h1>
 
-          <p className="text-lg text-gray-600 max-w-sm mb-8">
-            Discover Books, Flowers & Cozy Cafés for Every Occasion. Beautifully curated for you.
+          <p className="text-sm md:text-lg text-gray-600 max-w-xs md:max-w-sm mb-10 leading-relaxed px-4 md:px-0 opacity-90">
+            Discover a curated sanctuary of Books, Flowers & Cozy Cafés. Beautifully crafted for your soul.
           </p>
 
-          <div className="flex gap-4">
-            <button className="bg-[#a67c52] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#8e6a45] transition-all transform hover:scale-105">
-              SHOP NOW
-            </button>
-            <button className="bg-white border border-[#a67c52] text-[#a67c52] px-8 py-3 rounded-full shadow-md hover:bg-gray-50 transition-all">
-              BROWSE
-            </button>
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-8 sm:px-0">
+            <Link to="/products" className="bg-[#a67c52] text-white px-10 py-4.5 rounded-full shadow-2xl hover:bg-[#3e3e3e] transition-all transform hover:scale-105 text-center font-bold tracking-widest text-[10px] md:text-xs uppercase">
+              Shop Collection
+            </Link>
+            <Link to="/cafe" className="bg-white/80 backdrop-blur-sm border-2 border-[#a67c52] text-[#a67c52] px-10 py-4.5 rounded-full shadow-md hover:bg-[#a67c52] hover:text-white transition-all text-center font-bold tracking-widest text-[10px] md:text-xs uppercase">
+              Explore Café
+            </Link>
           </div>
         </div>
 
-        {/* RIGHT IMAGE - Arch Shaped Hamper & Book */}
-        <div className="hidden md:block w-[25%] self-end mb-10">
+        {/* RIGHT IMAGE - desktop only */}
+        <div className="hidden lg:block w-[25%] self-end mb-10">
           <div className="relative">
             <img 
               src="https://media.istockphoto.com/id/2148800872/photo/chic-brown-paper-wrapped-gift-box-with-pink-ribbon-and-white-florals.jpg?s=2048x2048&w=is&k=20&c=_UarVfZYL7kj2WJY8QzXCaWCUDqbuZ72VIDRszX2YzM="
               alt="Premium Gift"
-              className="w-full `aspect-[3/4]` object-cover rounded-t-full rounded-b-lg shadow-2xl border-6 border-white"
+              className="w-full aspect-[3/4] object-cover rounded-t-full rounded-b-lg shadow-2xl border-6 border-white"
             />
-            {/* Small book image overlapping to maintain the theme */}
             <div className="absolute -bottom-10 -left-10 w-32 h-32 z-20">
                <img 
                  src="https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=1170&auto=format&fit=crop" 
                  className="w-full h-full object-cover rounded-2xl shadow-xl border-4 border-white"
+                 alt="Books"
                />
             </div>
           </div>
@@ -61,19 +64,19 @@ const Hero = () => {
       </div>
 
       {/* BOTTOM MARQUEE BAR to match reference */}
-      <div className="absolute bottom-0 w-full bg-[#8c8c73] py-2 whitespace-nowrap overflow-hidden">
-        <div className="flex animate-marquee text-white text-sm font-light space-x-12 px-4 uppercase tracking-widest">
-            <span>Free Shipping on orders over $50</span>
-            <span>•</span>
+      <div className="absolute bottom-0 w-full bg-[#8c8c73] py-2.5 whitespace-nowrap overflow-hidden border-t border-white/10 z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+        <div className="flex animate-marquee text-white text-[9px] md:text-xs font-bold space-x-12 px-4 uppercase tracking-[0.2em]">
+            <span>Free Shipping on orders over ₹499</span>
+            <span className="opacity-50">•</span>
             <span>Shop Our New Arrivals</span>
-            <span>•</span>
+            <span className="opacity-50">•</span>
             <span>Premium Floral Hampers</span>
-            <span>•</span>
-            <span>Free Shipping on orders over $50</span>
-            <span>•</span>
-            <span>Shop Our New Arrivals</span>
-            <span>•</span>
-            <span>Premium Floral Hampers</span>
+            <span className="opacity-50">•</span>
+            <span>100% Handmade Treats</span>
+            <span className="opacity-50">•</span>
+            <span>Curated Cozy Books</span>
+            <span className="opacity-50">•</span>
+            <span>Free Shipping on orders over ₹499</span>
         </div>
       </div>
     </section>

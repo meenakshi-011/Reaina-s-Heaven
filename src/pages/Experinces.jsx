@@ -1,46 +1,23 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import ProductsFooter from "../components/ProductsFooter";
+import { getExperiences } from "../services/api";
 
 const Experiences = () => {
-  const experiencesList = [
-    {
-      id: 1,
-      title: "Botanical Arrangement Masterclass",
-      date: "Saturdays, 10:00 AM - 12:00 PM",
-      price: "$85 / person",
-      image: "/botanical_arrangement.png",
-      desc: "Learn the art of hand-tied bouquets and seasonal centerpieces. All materials, plus a complimentary coffee and pastry, are provided.",
-      spots: "Limited to 10 spots",
-    },
-    {
-      id: 2,
-      title: "The Slow Coffee Tasting",
-      date: "First Sunday of the Month, 2:00 PM",
-      price: "$45 / person",
-      image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800&auto=format&fit=crop",
-      desc: "A sensory journey through our current single-origin roasts. Learn about brewing methods, flavor notes, and the stories of the farms.",
-      spots: "Limited to 12 spots",
-    },
-    {
-      id: 3,
-      title: "Haven Book Society",
-      date: "Last Thursday of the Month, 6:30 PM",
-      price: "Free Admission",
-      image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=800&auto=format&fit=crop",
-      desc: "Join our intimate community of readers. We gather after hours to discuss our monthly book pick over wine, tea, and warm candlelight.",
-      spots: "RSVP Required",
-    },
-    {
-      id: 4,
-      title: "Candle Pouring Workshop",
-      date: "Wednesdays, 6:00 PM - 8:00 PM",
-      price: "$65 / person",
-      image: "/candle_pouring.png",
-      desc: "Blend your own essential oils and pour a custom soy wax candle. Enjoy a relaxing evening of crafting and conversation.",
-      spots: "Limited to 8 spots",
-    }
-  ];
+  const [experiencesList, setExperiencesList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getExperiences()
+      .then(data => {
+        setExperiencesList(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Error fetching experiences:", err);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f8f5f2]">
@@ -62,7 +39,7 @@ const Experiences = () => {
       {/* ── GRID OF EXPERIENCES ──────────── */}
       <section className="px-6 pb-24 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {experiencesList.map((exp) => (
+          {Array.isArray(experiencesList) && experiencesList.map((exp) => (
             <div key={exp.id} className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group flex flex-col sm:flex-row">
               {/* Image side */}
               <div className="w-full sm:w-2/5 h-64 sm:h-auto overflow-hidden relative">

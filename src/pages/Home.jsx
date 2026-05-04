@@ -1,6 +1,7 @@
 import React from 'react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
+import FeaturedProducts from '../components/FeaturedProducts'
 import FeaturesSection from '../components/FeaturesSection'
 import HomeAbout from './Aboutus'
 // Correcting footer import and spacing
@@ -11,6 +12,7 @@ const Home = () => {
     <div>
       <Navbar />
       <Hero />
+      <FeaturedProducts />
       <FeaturesSection />
       <ProductsFooter />
     </div>
