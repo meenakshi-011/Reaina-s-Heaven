@@ -129,6 +129,31 @@ router.post("/", isLoggedIn, async (req, res) => {
         console.error("❌ Order Email Background Error:", err.message);
       });
 
+      // Send Order Notification Email to Admin - Non-blocking
+      console.log(`📨 Triggering admin notification email...`);
+      sendEmail({
+        email: process.env.EMAIL_USER,
+        subject: `New Order Received - #${orderIdShort}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h1 style="color: #a67c52; margin: 0;">New Order Alert! 🔔</h1>
+              <p style="font-size: 12px; color: #777;">A new order has been placed on Reaina's Haven.</p>
+            </div>
+            <div style="border-bottom: 2px solid #a67c52; padding-bottom: 10px; margin-bottom: 20px;">
+              <h2 style="margin: 0; font-size: 18px;">Order Details</h2>
+              <p style="margin: 5px 0; font-size: 14px;">Order ID: <b>#${orderIdShort}</b></p>
+              <p style="margin: 5px 0; font-size: 14px;">Customer Email: <b>${req.user.email}</b></p>
+              <p style="margin: 5px 0; font-size: 14px;">Payment Method: <b>${paymentMethod}</b></p>
+              <p style="margin: 5px 0; font-size: 14px;">Total Amount: <b>₹${createdOrder.totalPrice}</b></p>
+            </div>
+            <p style="text-align: center; margin-top: 20px;">Please check the admin dashboard for full details and fulfillment.</p>
+          </div>
+        `
+      }).catch(err => {
+        console.error("❌ Admin Order Email Background Error:", err.message);
+      });
+
       // Emit socket event for new order
       if (req.io) {
         console.log(`🔌 Order Created! Emitting 'newOrder' to all clients for Order ID: ${createdOrder._id}`);

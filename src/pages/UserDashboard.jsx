@@ -127,6 +127,29 @@ const UserDashboard = () => {
     navigate("/login");
   };
 
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    try {
+      const res = await fetch(`${API_URL}/api/user/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setUser(updated.user);
+        toast.success("Profile updated successfully!");
+      } else {
+        toast.error("Failed to update profile");
+      }
+    } catch (err) { toast.error("Failed to update profile"); }
+  };
+
   return (
     <div className="min-h-screen bg-[#f8f5f2]">
       <Navbar />
@@ -327,18 +350,40 @@ const UserDashboard = () => {
             </div>
           )}
 
-          {/* Placeholder for other tabs */}
           {activeTab === "Settings" && (
-            <div className="bg-white rounded-3xl p-16 shadow-sm border border-[#e0d8ce] flex flex-col items-center justify-center text-center">
-              <span className="text-6xl mb-4 opacity-50">⚙️</span>
+            <div className="bg-white rounded-3xl p-8 shadow-sm border border-[#e0d8ce]">
               <h3 className="text-2xl font-serif text-[#3e3e3e] mb-2">Account Settings</h3>
-              <p className="text-gray-500">Manage your profile, addresses, and payment methods here.</p>
-              <button 
-                className="mt-6 px-6 py-2 bg-[#f8f5f2] border border-[#d4c4b0] text-[#a67c52] text-sm font-medium rounded-full hover:bg-white transition-colors"
-                onClick={() => setActiveTab("Activity")}
-              >
-                Go back to Activity
-              </button>
+              <p className="text-gray-500 mb-8">Update your personal information and profile picture.</p>
+              <form onSubmit={handleUpdateProfile} className="flex flex-col gap-6 max-w-2xl">
+                <div className="flex items-center gap-8 mb-4">
+                  <div className="w-24 h-24 bg-[#eee8e0] rounded-full flex items-center justify-center text-[#a67c52] text-3xl font-serif shadow-inner overflow-hidden">
+                    {user?.avatar ? <img src={user.avatar} className="w-full h-full object-cover" alt="Profile" /> : user?.name?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Profile Avatar URL</label>
+                    <input name="avatar" defaultValue={user?.avatar} placeholder="https://..." className="px-4 py-2 rounded-xl border border-[#e0d8ce] outline-none focus:border-[#a67c52] w-full max-w-sm text-sm" />
+                    <p className="text-[10px] text-gray-400 mt-1 italic">Enter a direct image link (Unsplash, etc.)</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+                    <input name="name" required defaultValue={user?.name} className="px-4 py-2 rounded-xl border border-[#e0d8ce] outline-none focus:border-[#a67c52] text-[#3e3e3e]" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
+                    <input name="email" required defaultValue={user?.email} className="px-4 py-2 rounded-xl border border-[#e0d8ce] outline-none focus:border-[#a67c52] text-[#3e3e3e]" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-4 mt-4 border-t border-[#f0e8dc] pt-6">
+                  <button type="button" onClick={() => setActiveTab("Activity")} className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">
+                    Cancel
+                  </button>
+                  <button type="submit" className="px-8 py-2.5 rounded-xl font-bold bg-[#a67c52] text-white shadow-lg shadow-[#a67c52]/20 hover:bg-[#8e6a45] transition-colors">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 

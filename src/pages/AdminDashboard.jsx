@@ -234,6 +234,8 @@ const AdminDashboard = () => {
         const updated = await res.json();
         setAdminUser(updated.user);
         toast.success("Profile updated successfully!");
+      } else {
+        toast.error("Failed to update profile");
       }
     } catch (err) { toast.error("Failed to update profile"); }
   };

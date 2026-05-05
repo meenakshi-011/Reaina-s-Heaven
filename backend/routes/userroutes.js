@@ -34,13 +34,18 @@ router.get("/profile", async (req, res) => {
 
 router.put("/profile", isLoggedIn, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      user.avatar = req.body.avatar || user.avatar;
-      
-      const updatedUser = await user.save();
+    const updateData = {};
+    if (req.body.name) updateData.name = req.body.name;
+    if (req.body.email) updateData.email = req.body.email;
+    if (req.body.avatar !== undefined) updateData.avatar = req.body.avatar;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (updatedUser) {
       res.json({
         message: "Profile updated successfully",
         user: {
