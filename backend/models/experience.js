@@ -6,7 +6,8 @@ const experienceSchema = new mongoose.Schema({
   price: String,
   image: String,
   desc: String,
-  spots: String
+  spots: String,
+  includes: String
 }, { timestamps: true });
 
 const Experience = mongoose.model("Experience", experienceSchema);

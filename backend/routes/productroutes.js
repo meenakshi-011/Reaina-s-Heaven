@@ -32,12 +32,13 @@ router.get("/:id", async (req, res) => {
 // @access  Private/Admin
 router.post("/", async (req, res) => {
   try {
-    const { name, price, description, imageUrl, category, productType } = req.body;
+    const { name, price, description, includes, imageUrl, category, productType } = req.body;
     
     const product = new Product({
       name,
       price,
       description,
+      includes,
       imageUrl,
       category,
       productType
@@ -56,13 +57,14 @@ router.post("/", async (req, res) => {
 // @access  Private/Admin
 router.put("/:id", async (req, res) => {
   try {
-    const { name, price, description, imageUrl, category, productType, stock } = req.body;
+    const { name, price, description, includes, imageUrl, category, productType, stock } = req.body;
     const product = await Product.findById(req.params.id);
 
     if (product) {
       product.name = name || product.name;
       product.price = price || product.price;
       product.description = description || product.description;
+      product.includes = includes !== undefined ? includes : product.includes;
       product.imageUrl = imageUrl || product.imageUrl;
       product.category = category || product.category;
       product.productType = productType || product.productType;

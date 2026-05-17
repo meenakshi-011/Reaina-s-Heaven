@@ -7,6 +7,8 @@ import { toast } from "react-hot-toast";
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "../config";
 import ProductsFooter from "../components/ProductsFooter";
+import Loader from "../components/Loader";
+
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -80,10 +82,7 @@ const Orders = () => {
           </header>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-12 h-12 border-4 border-[#a67c52]/20 border-t-[#a67c52] rounded-full animate-spin mb-4" />
-              <p className="text-gray-400 font-medium italic">Fetching your orders...</p>
-            </div>
+            <Loader />
           ) : orders.length === 0 ? (
             <div className="bg-white rounded-[2rem] p-16 text-center shadow-sm border border-[#e0d8ce]/30">
               <div className="w-24 h-24 bg-[#fdfaf7] rounded-full flex items-center justify-center mx-auto mb-6"><ShoppingBag size={40} className="text-[#c8a97e]" /></div>
@@ -116,7 +115,15 @@ const Orders = () => {
                       {order.orderItems.map((item, idx) => (
                         <div key={idx} className="flex flex-col sm:flex-row items-center gap-6 group">
                           <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#fdfaf7] border border-[#e0d8ce]/20 shrink-0"><img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
-                          <div className="flex-1 text-center sm:text-left"><h4 className="text-lg font-serif font-semibold text-[#3e3e3e] group-hover:text-[#a67c52] transition-colors">{item.name}</h4><p className="text-sm text-gray-500 mb-2">Quantity: <span className="font-semibold text-[#3e3e3e]">{item.qty}</span></p></div>
+                          <div className="flex-1 text-center sm:text-left">
+                            <h4 className="text-lg font-serif font-semibold text-[#3e3e3e] group-hover:text-[#a67c52] transition-colors">{item.name}</h4>
+                            {item.includes && (
+                              <p className="text-xs text-[#a67c52] font-medium mb-1 italic">
+                                Includes: {item.includes}
+                              </p>
+                            )}
+                            <p className="text-sm text-gray-500 mb-2">Quantity: <span className="font-semibold text-[#3e3e3e]">{item.qty}</span></p>
+                          </div>
                           <div className="sm:text-right"><p className="text-lg font-bold text-[#3e3e3e]">₹{(item.price * item.qty).toLocaleString("en-IN")}</p></div>
                         </div>
                       ))}

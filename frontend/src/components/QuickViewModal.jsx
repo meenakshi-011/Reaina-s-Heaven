@@ -49,7 +49,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
           <img 
             src={product.imageUrl || product.imageurl || product.image || "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800"} 
             alt={product.name}
-            className="w-full h-full object-cover min-h-[300px] md:min-h-full"
+            className="w-full h-full object-contain p-2 bg-white min-h-[300px] md:min-h-full"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800";
@@ -90,6 +90,21 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
             <p className="text-gray-600 leading-relaxed mb-8">
               {product.description || "Beautifully curated item for your cozy lifestyle. Experience the premium quality and thoughtful design of Reaina's Haven."}
             </p>
+
+            {/* Inclusions prominently displayed */}
+            {product.includes && (
+              <div className="mb-6">
+                <h3 className="text-xs font-bold text-[#a67c52] uppercase tracking-wider mb-2">Includes:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.includes.split(',').map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5 bg-[#fdfaf7] px-2.5 py-1 rounded-full border border-[#e0d8ce]">
+                      <span className="text-[#a67c52] text-[10px]">✨</span>
+                      <span className="text-xs text-gray-700 font-medium">{item.trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Additional info tags if any */}
             {(product.mood || product.filter || product.ingredients) && (

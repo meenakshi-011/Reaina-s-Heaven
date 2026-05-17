@@ -48,7 +48,7 @@ const FeaturesSection = () => {
               className="group flex flex-col items-center text-center"
             >
               <Link to={item.link} className="relative w-full h-[400px] md:h-[550px] overflow-hidden rounded-[2.5rem] md:rounded-[3rem] shadow-sm group-hover:shadow-[0_30px_100px_rgba(0,0,0,0.12)] transition-all duration-1000 mb-8 md:mb-10">
-                <img src={item.img} alt={item.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                <img src={item.img} alt={item.title} className="w-full h-full object-contain p-2 bg-white transition-transform duration-1000 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-white/0 group-hover:bg-black/10 transition-colors duration-700" />
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-8 py-3 rounded-full text-[10px] font-bold tracking-widest opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500">
                   EXPLORE {item.label}

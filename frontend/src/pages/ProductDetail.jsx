@@ -6,6 +6,8 @@ import { Heart, Star, ArrowLeft, Truck, ShieldCheck, RefreshCcw } from 'lucide-r
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/Navbar';
 import ProductsFooter from '../components/ProductsFooter';
+import Loader from '../components/Loader';
+
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -38,8 +40,7 @@ const ProductDetail = () => {
       <div className="min-h-screen bg-[#fdfaf7] flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="w-12 h-12 border-4 border-[#e0d8ce] border-t-[#a67c52] rounded-full animate-spin mb-4"></div>
-          <p className="text-[#a67c52] font-serif italic">Loading details...</p>
+          <Loader />
         </div>
       </div>
     );
@@ -129,7 +130,7 @@ const ProductDetail = () => {
               <img 
                 src={product.imageUrl || product.imageurl || product.image || "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800"} 
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-4 bg-white"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800";
@@ -183,6 +184,21 @@ const ProductDetail = () => {
             <p className="text-lg text-gray-600 leading-relaxed mb-8">
               {product.description || "Experience the premium quality and thoughtful design of Reaina's Haven. Handpicked and beautifully curated for your special moments."}
             </p>
+
+            {/* Inclusions prominently displayed */}
+            {product.includes && (
+              <div className="mb-8">
+                <h3 className="text-sm font-bold text-[#a67c52] uppercase tracking-wider mb-3">This Package Includes:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.includes.split(',').map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-[#fdfaf7] px-3 py-1.5 rounded-full border border-[#e0d8ce]">
+                      <span className="text-[#a67c52] text-xs">✨</span>
+                      <span className="text-sm text-gray-700 font-medium">{item.trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Tags */}
             {(product.mood || product.filter || product.ingredients || product.is_healthy) && (
@@ -249,9 +265,11 @@ const ProductDetail = () => {
                 What's Inside
               </h3>
               <p className="text-gray-600 text-sm leading-relaxed">
-                {product.ingredients && product.ingredients.length > 0 
+                {product.includes 
+                  ? product.includes
+                  : (product.ingredients && product.ingredients.length > 0 
                   ? Array.isArray(product.ingredients) ? product.ingredients.join(", ") : product.ingredients
-                  : "Carefully curated premium items wrapped beautifully. Each package is designed to provide a complete and delightful unboxing experience."}
+                  : "Carefully curated premium items wrapped beautifully. Each package is designed to provide a complete and delightful unboxing experience.")}
               </p>
             </div>
 

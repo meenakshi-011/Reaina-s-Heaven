@@ -107,6 +107,7 @@ const Contactus = () => {
               }
 
               const formData = new FormData(e.target);
+
               const data = Object.fromEntries(formData.entries());
               
               const loadingToast = toast.loading("Sending your message...");

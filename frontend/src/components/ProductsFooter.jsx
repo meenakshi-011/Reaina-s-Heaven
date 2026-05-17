@@ -76,6 +76,8 @@ const ProductsFooter = () => {
               { name: "Contact Us", path: "/contactus" },
               { name: "FAQs", path: "/faq" },
               { name: "Shipping Policy", path: "/shipping-policy" },
+              { name: "Refund Policy", path: "/refund-policy" },
+              { name: "Customization Guide", path: "/customization" },
               { name: "Order Tracking", path: "/orders" },
             ],
           },
@@ -111,10 +113,11 @@ const ProductsFooter = () => {
       {/* Bottom bar */}
       <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-3 text-white/40 text-xs">
         <span>© 2026 Reaina's Haven. All rights reserved.</span>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-white/70 transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-white/70 transition-colors">Terms of Service</a>
-          <a href="#" className="hover:text-white/70 transition-colors">Cookie Preferences</a>
+        <div className="flex gap-6 flex-wrap justify-center">
+          <a href="/shipping-policy" className="hover:text-white/70 transition-colors">Shipping Policy</a>
+          <a href="/refund-policy" className="hover:text-white/70 transition-colors">Refund Policy</a>
+          <a href="/customization" className="hover:text-white/70 transition-colors">Customization Guide</a>
+          <a href="/faq" className="hover:text-white/70 transition-colors">FAQs</a>
         </div>
       </div>
     </footer>

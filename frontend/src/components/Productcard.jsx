@@ -83,7 +83,7 @@ function ProductCard({ product, isWishlisted, onQuickView }) {
         <img
           src={product.imageUrl || product.imageurl || product.image || "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=500&auto=format&fit=crop"}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className="w-full h-full object-contain p-2 transition-transform duration-700 group-hover:scale-110"
           onError={(e) => {
             e.target.onerror = null;
             e.target.src = "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=500&auto=format&fit=crop";
@@ -157,9 +157,11 @@ function ProductCard({ product, isWishlisted, onQuickView }) {
           {product.name}
         </h3>
 
-        <p className="text-gray-500 text-[10px] leading-relaxed line-clamp-2 mb-3 flex-1 opacity-70">
+        <p className="text-gray-500 text-[10px] leading-relaxed line-clamp-2 flex-1 opacity-70">
           {product.description || "Beautifully curated item for your cozy lifestyle."}
         </p>
+
+
 
         {/* Price & Add to Cart */}
         <div className="flex items-center justify-between pt-3 border-t border-[#f8f5f2] mt-auto">
@@ -175,6 +177,20 @@ function ProductCard({ product, isWishlisted, onQuickView }) {
             {isAdded ? "✓" : "Add"}
           </button>
         </div>
+
+        {/* Product Inclusions */}
+        {product.includes && (
+          <div className="mt-3 pt-3 border-t border-[#f8f5f2]">
+            <span className="text-[9px] font-bold text-[#a67c52] uppercase tracking-wider block mb-1.5">Includes:</span>
+            <div className="flex flex-wrap gap-1">
+              {product.includes.split(',').map((item, idx) => (
+                <span key={idx} className="bg-[#fdfaf7] text-[#6b5c47] text-[9px] px-1.5 py-0.5 rounded border border-[#e0d8ce]/50">
+                  {item.trim()}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── BRAND & RATING STRIP ──────────── */}

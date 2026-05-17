@@ -46,7 +46,7 @@ const Experiences = () => {
                 <img 
                   src={exp.image} 
                   alt={exp.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-contain p-2 bg-white group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#a67c52]">
                   {exp.price}
@@ -61,9 +61,18 @@ const Experiences = () => {
                 <h3 className="text-2xl font-serif text-[#3e3e3e] mb-3">
                   {exp.title}
                 </h3>
-                <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">
+                <p className="text-gray-600 text-sm leading-relaxed mb-4 flex-1">
                   {exp.desc}
                 </p>
+                
+                {exp.includes && (
+                  <div className="mb-6">
+                    <p className="text-[10px] font-bold text-[#a67c52] uppercase tracking-wider mb-1.5">Includes:</p>
+                    <p className="text-xs text-gray-500 italic leading-relaxed">
+                      {exp.includes}
+                    </p>
+                  </div>
+                )}
                 
                 <div className="flex items-center justify-between border-t border-[#f0e8dc] pt-5">
                   <span className="text-xs text-rose-500 font-medium">

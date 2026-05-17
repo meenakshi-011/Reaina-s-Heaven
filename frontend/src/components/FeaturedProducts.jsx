@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ProductCard from "./productcard";
+import ProductCard from "./Productcard";
 import { getProducts } from "../services/api";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";

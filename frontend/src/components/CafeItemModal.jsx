@@ -16,7 +16,7 @@ const CafeItemModal = ({ item, isOpen, onClose }) => {
       ...item, 
       name: item.item_name, 
       price: selectedQty?.price || item.item_price || 0,
-      image: item.imageurl || item.imageul,
+      image: item.imageurl || item.imageUrl || item.imageul,
       selectedQty 
     });
     setIsAdded(true);
@@ -31,7 +31,7 @@ const CafeItemModal = ({ item, isOpen, onClose }) => {
     ? item.ingredients 
     : (item.ingredients ? item.ingredients.split(',').map(s => s.trim()) : []);
 
-  const src = item.imageurl || item.imageul;
+  const src = item.imageurl || item.imageUrl || item.imageul;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -58,7 +58,7 @@ const CafeItemModal = ({ item, isOpen, onClose }) => {
             <img 
               src={src} 
               alt={item.item_name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain p-2 bg-white"
               onError={(e) => {
                 e.target.style.display = 'none';
               }}
@@ -122,11 +122,17 @@ const CafeItemModal = ({ item, isOpen, onClose }) => {
           {/* Description & Ingredients */}
           <div className="mb-6">
             <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-2">Ingredients & Details</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            <p className="text-gray-600 text-sm leading-relaxed mb-4">
               {ingredients.length > 0 
                 ? ingredients.join(", ") 
                 : "A delightful culinary creation prepared with the finest ingredients."}
             </p>
+            {item.includes && (
+              <div className="pt-3 border-t border-gray-100">
+                <h4 className="text-[10px] font-black text-[#a67c52] uppercase tracking-wider mb-1">What's Inside:</h4>
+                <p className="text-xs text-gray-500 italic">{item.includes}</p>
+              </div>
+            )}
           </div>
 
           {/* Quality Promises */}

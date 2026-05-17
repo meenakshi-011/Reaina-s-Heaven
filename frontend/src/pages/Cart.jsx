@@ -75,6 +75,11 @@ const Cart = () => {
                           <h3 className="text-xl font-serif text-[#3e3e3e] font-semibold">
                             {item.name}
                           </h3>
+                          {item.includes && (
+                            <div className="mt-2 text-xs text-gray-500 max-w-sm">
+                              <span className="font-semibold text-[#a67c52]">Includes:</span> {item.includes}
+                            </div>
+                          )}
                         </div>
                         <span className="text-xl font-bold text-[#a67c52]">
                           ₹{(item.price * item.qty).toLocaleString("en-IN")}

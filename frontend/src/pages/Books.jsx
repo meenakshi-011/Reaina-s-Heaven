@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import ProductsFooter from "../components/ProductsFooter";
 import { getBooks } from "../services/api";
+import Loader from "../components/Loader";
+
 
 const Books = () => {
   const [books, setBooks] = useState([]);
@@ -46,10 +48,7 @@ const Books = () => {
       {/* ── BOOK GRID ───────────────────── */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="w-10 h-10 border-4 border-[#e0d8ce] border-t-[#a67c52] rounded-full animate-spin mb-4"></div>
-            <p className="font-serif italic text-[#a67c52]">Opening the archives...</p>
-          </div>
+          <Loader />
         ) : error ? (
           <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-red-50">
             <p className="text-red-800 font-medium">{error}</p>
@@ -71,7 +70,7 @@ const Books = () => {
                     <img 
                       src={book.imageurl || book.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop"} 
                       alt={book.book_name}
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      className="w-full h-full object-contain p-2 bg-white transition-transform duration-1000 group-hover:scale-110"
                     />
                   </div>
 

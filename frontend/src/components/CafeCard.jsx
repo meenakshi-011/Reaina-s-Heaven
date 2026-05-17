@@ -34,12 +34,12 @@ const CafeCard = ({ item, onImageClick }) => {
         onClick={onImageClick}
       >
         {(() => {
-          const src = item.imageurl || item.imageul;
+          const src = item.imageurl || item.imageUrl || item.imageul;
           return src && src.trim() !== "" ? (
             <img
               src={src}
               alt={item.item_name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
           ) : (
@@ -146,6 +146,12 @@ const CafeCard = ({ item, onImageClick }) => {
               ? ingredients.join(", ") 
               : "A delightful culinary creation prepared with the finest ingredients."}
           </p>
+          {item.includes && (
+            <div className="mt-2 pt-2 border-t border-gray-50">
+              <p className="text-[10px] text-[#a67c52] font-bold uppercase tracking-tighter">What's Inside:</p>
+              <p className="text-[10px] text-gray-400 italic">{item.includes}</p>
+            </div>
+          )}
         </div>
 
         {/* ── FOOTER ACTIONS ── */}

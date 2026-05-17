@@ -25,10 +25,23 @@ const getRazorpay = () => {
 // @access  Private
 router.post("/order", isLoggedIn, async (req, res) => {
   try {
-    const { amount, currency = "INR", receipt } = req.body;
+    const { amount: frontendAmount, currency = "INR", receipt } = req.body;
+
+    // Architecture Fix: Never trust frontend amount. 
+    // Fetch price from DB to prevent payload tampering.
+    const dbOrderId = receipt ? receipt.replace('receipt_', '') : null;
+    let finalAmount = frontendAmount;
+    
+    if (dbOrderId) {
+      const order = await Order.findById(dbOrderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found in DB" });
+      }
+      finalAmount = order.totalPrice;
+    }
 
     const options = {
-      amount: amount * 100, // amount in smallest currency unit (paise)
+      amount: Math.round(finalAmount * 100), // amount in paise
       currency,
       receipt,
     };
@@ -49,6 +62,7 @@ router.post("/order", isLoggedIn, async (req, res) => {
 // @route   POST /api/payment/verify
 // @access  Private
 router.post("/verify", isLoggedIn, async (req, res) => {
+  console.log("🔍 Verifying Payment payload:", req.body);
   try {
     const {
       razorpay_order_id,
@@ -64,18 +78,49 @@ router.post("/verify", isLoggedIn, async (req, res) => {
       .digest("hex");
 
     if (razorpay_signature === expectedSign) {
-      // Payment verified
+      // ✅ Step 1: Extra Security Check - Fetch payment details from Razorpay directly
+      console.log("✅ Signature verified. Fetching payment details for:", razorpay_payment_id);
+      const paymentDetails = await getRazorpay().payments.fetch(razorpay_payment_id);
+      console.log("✅ Payment details fetched. Status:", paymentDetails.status);
+      
+      if (paymentDetails.status !== 'captured' && paymentDetails.status !== 'authorized') {
+        console.error("❌ Payment not captured/authorized. Status:", paymentDetails.status);
+        return res.status(400).json({ message: "Payment was not successful on Razorpay" });
+      }
+
+      // ✅ Step 2: Amount Verification
       const order = await Order.findById(db_order_id);
-      if (order) {
-        order.isPaid = true;
-        order.paidAt = Date.now();
-        order.paymentResult = {
-          id: razorpay_payment_id,
-          status: "Paid",
-          update_time: Date.now().toString(),
-          email_address: req.user.email,
-        };
-        await order.save();
+      if (!order) {
+        return res.status(404).json({ message: "Internal Order not found" });
+      }
+
+      // razorpay amount is in paise, so we divide by 100
+      const paidAmount = paymentDetails.amount / 100;
+      console.log(`💰 Verifying amounts: Paid ₹${paidAmount} vs Expected ₹${order.totalPrice}`);
+      
+      if (paidAmount < order.totalPrice) {
+         console.error("❌ Paid amount mismatch! Expected:", order.totalPrice, "Got:", paidAmount);
+         return res.status(400).json({ message: "Paid amount mismatch! Security alert triggered." });
+      }
+
+      // Architecture Fix: Idempotency Check
+      // If webhook already processed this, or user clicked twice, prevent double execution
+      if (order.isPaid) {
+        console.log("⚠️ Order is already marked as paid. Returning early.");
+        return res.json({ message: "Payment already verified successfully via webhook", order });
+      }
+
+      // Payment verified successfully
+      order.isPaid = true;
+      order.paidAt = Date.now();
+      order.paymentResult = {
+        id: razorpay_payment_id,
+        status: paymentDetails.status,
+        update_time: Date.now().toString(),
+        email_address: req.user.email,
+        method: paymentDetails.method,
+      };
+      await order.save();
         
         // Log Activity
         await Activity.create({
@@ -85,70 +130,107 @@ router.post("/verify", isLoggedIn, async (req, res) => {
           details: `Order ID: ${order._id}, Payment ID: ${razorpay_payment_id}`
         });
 
-        // Send Payment Invoice Email
+        // ✅ Notify User: Payment Success Email
         try {
           const orderIdShort = order._id.toString().slice(-8).toUpperCase();
           await sendEmail({
             email: req.user.email,
             subject: `Payment Successful! Invoice for Order #${orderIdShort}`,
             html: `
-              <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-                <div style="text-align: center; margin-bottom: 20px;">
-                  <h1 style="color: #a67c52; margin: 0;">Reaina's Haven</h1>
-                  <p style="font-size: 12px; color: #777;">Green City, Jabalpur | Payment Receipt</p>
+              <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3a2d; max-width: 600px; margin: 0 auto; border: 1px solid #e0d8ce; padding: 40px; border-radius: 24px; background-color: #fff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <h1 style="color: #2d3a2d; margin: 0; font-family: serif; font-size: 28px;">Reaina's Haven</h1>
+                  <p style="font-size: 10px; color: #a67c52; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px;">Payment Receipt</p>
                 </div>
-                <div style="border-bottom: 2px solid #a67c52; padding-bottom: 10px; margin-bottom: 20px;">
-                  <h2 style="margin: 0; font-size: 18px; color: #27ae60;">Payment Verified! ✅</h2>
-                  <p style="margin: 5px 0; font-size: 14px;">Order ID: <b>#${orderIdShort}</b></p>
-                  <p style="margin: 5px 0; font-size: 14px;">Payment ID: <b>${razorpay_payment_id}</b></p>
-                  <p style="margin: 5px 0; font-size: 14px;">Status: <b>PAID</b></p>
+                
+                <div style="background-color: #e8f5e9; padding: 25px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #c8e6c9; text-align: center;">
+                  <h2 style="margin: 0; font-size: 20px; color: #2e7d32;">Payment Verified! ✅</h2>
+                  <p style="margin: 10px 0 0; font-size: 14px; color: #388e3c;">Your payment has been successfully processed.</p>
                 </div>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+
+                <div style="margin-bottom: 30px; display: grid; grid-template-cols: 1fr 1fr; gap: 20px;">
+                  <div>
+                    <p style="margin: 0; font-size: 11px; color: #8c8c73; text-transform: uppercase;">Order ID</p>
+                    <p style="margin: 5px 0; font-size: 14px; color: #2d3a2d; font-weight: bold;">#${orderIdShort}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0; font-size: 11px; color: #8c8c73; text-transform: uppercase;">Payment ID</p>
+                    <p style="margin: 5px 0; font-size: 14px; color: #2d3a2d; font-weight: bold;">${razorpay_payment_id}</p>
+                  </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
                   <thead>
-                    <tr style="background-color: #fdfaf7;">
-                      <th style="text-align: left; padding: 10px; border-bottom: 1px solid #eee;">Item</th>
-                      <th style="text-align: center; padding: 10px; border-bottom: 1px solid #eee;">Qty</th>
-                      <th style="text-align: right; padding: 10px; border-bottom: 1px solid #eee;">Price</th>
+                    <tr style="border-bottom: 2px solid #f0e8dc;">
+                      <th style="text-align: left; padding: 12px 0; font-size: 12px; color: #8c8c73;">Item</th>
+                      <th style="text-align: right; padding: 12px 0; font-size: 12px; color: #8c8c73;">Price</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${order.orderItems.map(item => `
-                      <tr>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
-                        <td style="text-align: center; padding: 10px; border-bottom: 1px solid #eee;">${item.qty}</td>
-                        <td style="text-align: right; padding: 10px; border-bottom: 1px solid #eee;">₹${item.price}</td>
+                      <tr style="border-bottom: 1px solid #f8f5f2;">
+                        <td style="padding: 15px 0; font-size: 14px; color: #2d3a2d;">${item.name} x ${item.qty}</td>
+                        <td style="text-align: right; padding: 15px 0; font-size: 14px; color: #2d3a2d;">₹${item.price.toLocaleString('en-IN')}</td>
                       </tr>
                     `).join('')}
                   </tbody>
                 </table>
-                <div style="text-align: right; line-height: 1.6;">
-                  <h3 style="margin: 10px 0; color: #a67c52;">Total Paid: ₹${order.totalPrice}</h3>
+
+                <div style="text-align: right; background-color: #fcfaf8; padding: 20px; border-radius: 12px;">
+                  <h3 style="margin: 0; color: #2d3a2d; font-size: 20px;">Total Paid: ₹${order.totalPrice.toLocaleString('en-IN')}</h3>
                 </div>
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #777; text-align: center;">
-                  <p>Thank you for your payment!</p>
-                  <p>Your order is now being processed for delivery.</p>
+
+                <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #f0e8dc; text-align: center; font-size: 12px; color: #8c8c73;">
+                  <p>Thank you for your payment! Your botanical sanctuary goods are being prepared.</p>
                 </div>
               </div>
             `
           });
         } catch (err) {
-          console.error("❌ Payment Email Error:", err.message);
+          console.error("❌ Payment Success Email Error:", err.message);
+        }
+
+        // ✅ Notify Admin: Payment Success
+        try {
+          const orderIdShort = order._id.toString().slice(-8).toUpperCase();
+          await sendEmail({
+            email: process.env.EMAIL_USER,
+            subject: `💰 Payment Received! Order #${orderIdShort}`,
+            html: `
+              <div style="font-family: sans-serif; color: #333; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                <h2 style="color: #27ae60;">Payment Confirmed</h2>
+                <p>Payment has been successfully verified for <b>Order #${orderIdShort}</b>.</p>
+                <div style="background: #f9f9f9; padding: 15px; margin: 15px 0;">
+                  <p><b>Amount:</b> ₹${order.totalPrice.toLocaleString('en-IN')}</p>
+                  <p><b>Customer:</b> ${req.user.name}</p>
+                  <p><b>Razorpay ID:</b> ${razorpay_payment_id}</p>
+                </div>
+                <p>This order is now ready for fulfillment.</p>
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin" style="display: inline-block; background: #27ae60; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Open Admin Dashboard</a>
+              </div>
+            `
+          });
+        } catch (err) {
+          console.error("❌ Admin Payment Notification Error:", err.message);
         }
         
         // Notify via socket
         if (req.io) {
+          console.log("🔌 Emitting orderUpdated via socket to clients.");
           req.io.emit("orderUpdated", order);
           req.io.emit("activityUpdate", { userId: req.user._id });
+        } else {
+          console.warn("⚠️ req.io is undefined, cannot emit socket events!");
         }
 
+        console.log("✅ Payment verification complete. Sending response.");
         return res.json({ message: "Payment verified successfully", order });
-      } else {
-        return res.status(404).json({ message: "Internal Order not found" });
-      }
     } else {
+      console.error("❌ Signature mismatch! Expected:", expectedSign, "Got:", razorpay_signature);
       return res.status(400).json({ message: "Invalid signature sent!" });
     }
   } catch (error) {
+    console.error("❌ Verification Route Error:", error.message);
     res.status(500).json({ message: error.message });
   }
 });

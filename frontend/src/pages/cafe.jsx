@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { API_URL, SOCKET_URL } from "../config";
@@ -16,6 +16,7 @@ const Cafe = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCafeItem, setSelectedCafeItem] = useState(null);
+  const { id } = useParams();
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -35,6 +36,27 @@ const Cafe = () => {
 
     fetchMenu();
   }, []);
+
+  // Handle direct item link
+  useEffect(() => {
+    if (id && items.length > 0) {
+      const item = items.find(i => i._id === id);
+      if (item) {
+        setSelectedCafeItem(item);
+      } else {
+        // If not in the list, fetch it specifically
+        const fetchSingleItem = async () => {
+          try {
+            const res = await axios.get(`${API_URL}/api/cafe/${id}`);
+            setSelectedCafeItem(res.data);
+          } catch (err) {
+            console.error("Single item fetch error:", err.message);
+          }
+        };
+        fetchSingleItem();
+      }
+    }
+  }, [id, items]);
 
   // Real-time updates for Cafe Menu
   useEffect(() => {
@@ -68,9 +90,18 @@ const Cafe = () => {
 
   const categories = ["All", ...new Set(items.map(i => i.category).filter(Boolean))];
 
-  const filteredItems = items
+  const uniqueItems = items.reduce((acc, current) => {
+    const x = acc.find(item => item.item_name === current.item_name);
+    if (!x) {
+      return acc.concat([current]);
+    } else {
+      return acc;
+    }
+  }, []);
+
+  const filteredItems = uniqueItems
     .filter(i => {
-      const img = i.imageurl || i.imageul || "";
+      const img = i.imageurl || i.imageul || i.imageUrl || "";
       return img.trim() !== "";
     })
     .filter(i => selectedCategory === "All" || i.category === selectedCategory)

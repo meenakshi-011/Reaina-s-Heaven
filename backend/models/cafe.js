@@ -77,7 +77,10 @@ const cafeItemSchema = new mongoose.Schema(
         quantity: Number,  // 6
         price: Number      // 149
       }
-    ]
+    ],
+    includes: {
+      type: String
+    }
   },
   {
     timestamps: true

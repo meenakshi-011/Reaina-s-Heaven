@@ -19,6 +19,7 @@ const orderSchema = new mongoose.Schema(
           required: true,
         },
         ingredients: [String],
+        includes: { type: String },
       },
     ],
     shippingAddress: {

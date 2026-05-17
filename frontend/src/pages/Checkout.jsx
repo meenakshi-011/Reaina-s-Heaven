@@ -7,6 +7,8 @@ import { createOrder, createPaymentOrder, verifyPayment } from "../services/api"
 import { toast } from "react-hot-toast";
 import ProductsFooter from "../components/ProductsFooter";
 
+import { RAZORPAY_KEY_ID } from "../config";
+
 const Checkout = () => {
   const { cartItems, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
@@ -26,15 +28,19 @@ const Checkout = () => {
   };
 
   const handlePayment = async (dbOrderId) => {
+    if (!RAZORPAY_KEY_ID) {
+      toast.error("Razorpay Key ID is missing. Please check your environment variables.");
+      return;
+    }
     try {
       const order = await createPaymentOrder({
         amount: cartTotal,
         currency: "INR",
         receipt: `receipt_${dbOrderId}`,
       });
-
+ 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: order.currency,
         name: "Reaina's Haven",
@@ -88,6 +94,7 @@ const Checkout = () => {
           image: item.imageUrl || item.imageurl || item.image,
           price: item.price,
           product: item._id,
+          includes: item.includes,
         })),
         shippingAddress,
         paymentMethod,
@@ -220,6 +227,7 @@ const Checkout = () => {
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-semibold truncate text-white/90">{item.name}</h4>
                         <p className="text-xs text-white/40">{item.qty} × ₹{(item.price || 0).toLocaleString("en-IN")}</p>
+                        {item.includes && <p className="text-[10px] text-white/50 truncate mt-0.5"><span className="text-[#c8a97e]">Incl:</span> {item.includes}</p>}
                       </div>
                       <span className="text-sm font-bold text-[#c8a97e]">₹{((item.price || 0) * (item.qty || 1)).toLocaleString("en-IN")}</span>
                     </div>

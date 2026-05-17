@@ -17,6 +17,20 @@ router.get("/", async (req, res) => {
   }
 });
 
+// @desc    Fetch single cafe item by ID
+// @route   GET /api/cafe/:id
+// @access  Public
+router.get("/:id", async (req, res) => {
+  try {
+    const item = await Cafe.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Item not found" });
+    res.json(item);
+  } catch (error) {
+    console.error("Cafe item fetch error:", error.message);
+    res.status(500).json({ message: "Failed to fetch cafe item" });
+  }
+});
+
 // @desc    Add new cafe item
 // @route   POST /api/cafe
 // @access  Private/Admin

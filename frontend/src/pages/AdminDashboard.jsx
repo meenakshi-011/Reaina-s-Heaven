@@ -33,11 +33,11 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   
   const [newProduct, setNewProduct] = React.useState({
-    name: "", price: "", description: "", category: "Pottery", productType: "Bouquet", imageUrl: "", stock: 10
+    name: "", price: "", description: "", includes: "", category: "Pottery", productType: "Bouquet", imageUrl: "", stock: 10
   });
 
   const [newCafeItem, setNewCafeItem] = React.useState({
-    item_name: "", category: "Snacks", subCategory: "Munchies", item_type: "veg", imageurl: "", 
+    item_name: "", category: "Snacks", subCategory: "Munchies", item_type: "veg", includes: "", imageurl: "", 
     quantityOptions: [{ label: "Standard", quantity: 1, price: 0 }]
   });
 
@@ -258,7 +258,7 @@ const AdminDashboard = () => {
         setShowAddCafeModal(false);
         toast.success("Cafe item added!");
         setNewCafeItem({
-          item_name: "", category: "Snacks", subCategory: "Munchies", item_type: "veg", imageurl: "", 
+          item_name: "", category: "Snacks", subCategory: "Munchies", item_type: "veg", includes: "", imageurl: "", 
           quantityOptions: [{ label: "Standard", quantity: 1, price: 0 }]
         });
       }
@@ -299,7 +299,7 @@ const AdminDashboard = () => {
                )}
              </div>
              <h2 className="font-serif text-[#3e3e3e] font-semibold text-lg">{adminUser?.name || "Admin Portal"}</h2>
-             <span className="text-xs uppercase tracking-widest text-[#a67c52] font-bold">{adminUser?.role === 'admin' ? 'System Administrator' : 'Store Manager'}</span>
+             <span className="text-xs uppercase tracking-widest text-[#a67c52] font-bold">{['admin', 'SUPER_ADMIN'].includes(adminUser?.role) ? 'System Administrator' : 'Store Manager'}</span>
           </div>
 
           <nav className="flex flex-col gap-2 flex-1">
@@ -548,6 +548,7 @@ const AdminDashboard = () => {
                 <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Category</label><input required value={newCafeItem.category} onChange={e => setNewCafeItem({...newCafeItem, category: e.target.value})} placeholder="e.g. Beverages" className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]" /></div>
                 <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Item Type</label><select value={newCafeItem.item_type} onChange={e => setNewCafeItem({...newCafeItem, item_type: e.target.value})} className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]"><option value="veg">Veg</option><option value="non-veg">Non-Veg</option></select></div>
               </div>
+              <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Includes (What's Inside)</label><input value={newCafeItem.includes} onChange={e => setNewCafeItem({...newCafeItem, includes: e.target.value})} placeholder="e.g. 6 pcs Momos, Chutney, Mayo" className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]" /></div>
               <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Image URL</label><input required value={newCafeItem.imageurl} onChange={e => setNewCafeItem({...newCafeItem, imageurl: e.target.value})} placeholder="https://..." className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]" /></div>
               <div className="flex gap-4 mt-4"><button type="button" onClick={() => setShowAddCafeModal(false)} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors">Cancel</button><button type="submit" className="flex-1 py-3 rounded-xl font-bold bg-[#a67c52] text-white shadow-lg shadow-[#a67c52]/20 hover:bg-[#8e6a45] transition-colors">Add Item</button></div>
             </form>
@@ -584,6 +585,7 @@ const AdminDashboard = () => {
                 <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Price (₹)</label><input required type="number" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]" /></div>
               </div>
               <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Description</label><textarea required value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52] h-20" /></div>
+              <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Includes (Comma separated)</label><input value={newProduct.includes} onChange={e => setNewProduct({...newProduct, includes: e.target.value})} placeholder="e.g. Cakes, Bouquet, Photos with Lighting" className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]" /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Category</label><input required value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]" /></div>
                 <div className="flex flex-col gap-1"><label className="text-xs font-bold text-gray-500 uppercase">Stock</label><input required type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: Number(e.target.value)})} className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-[#a67c52]" /></div>

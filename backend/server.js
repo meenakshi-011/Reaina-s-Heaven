@@ -18,6 +18,7 @@ import orderroutes from "./routes/orderRoutes.js";
 import statsroutes from "./routes/statsRoutes.js";
 import paymentroutes from "./routes/paymentRoutes.js";
 import contactroutes from "./routes/contactRoutes.js";
+import webhookroutes from "./routes/webhookRoutes.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -42,6 +43,10 @@ io.on("connection", (socket) => {
 });
 
 app.use(cors());
+
+// Webhook route needs raw body for signature verification
+app.use("/api/webhook", express.raw({ type: 'application/json' }), webhookroutes);
+
 app.use(express.json());
 
 // Log incoming requests
@@ -61,6 +66,9 @@ app.use("/api/orders", orderroutes);
 app.use("/api/stats", statsroutes);
 app.use("/api/payment", paymentroutes);
 app.use("/api/contact", contactroutes);
+app.get("/", (req, res) => {
+  res.send("<h1>🌿 Reaina's Haven API is Live!</h1><p>The botanical sanctuary backend is running successfully.</p>");
+});
 
 const PORT = process.env.PORT || 5000;
 

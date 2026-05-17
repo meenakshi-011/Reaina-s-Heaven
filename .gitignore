@@ -23,6 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.*
+**/.env
+**/.env.*
+**/__pycache__/
+*.py[cod]
+rag_Service/chroma_db/
 debug_db.js
 deep_check.js
 fix_db_images.js
@@ -38,7 +44,7 @@ data.js
 check_fields.js
 check_dns.js
 check_srv.js
-scratch/*
+**/scratch/
 
 
 

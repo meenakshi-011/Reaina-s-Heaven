@@ -81,78 +81,97 @@ router.post("/", isLoggedIn, async (req, res) => {
       console.log(`📨 Triggering professional invoice email for ${req.user.email}...`);
       const orderIdShort = createdOrder._id.toString().slice(-8).toUpperCase();
       
-      // We don't await this so the user gets a response immediately
-      sendEmail({
-        email: req.user.email,
-        subject: `Invoice for your Order #${orderIdShort} - Reaina's Haven`,
-        html: `
-          <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h1 style="color: #a67c52; margin: 0;">Reaina's Haven</h1>
-              <p style="font-size: 12px; color: #777;">Green City, Jabalpur | Digital Invoice</p>
-            </div>
-            <div style="border-bottom: 2px solid #a67c52; padding-bottom: 10px; margin-bottom: 20px;">
-              <h2 style="margin: 0; font-size: 18px;">Order Confirmed!</h2>
-              <p style="margin: 5px 0; font-size: 14px;">Order ID: <b>#${orderIdShort}</b></p>
-              <p style="margin: 5px 0; font-size: 14px;">Date: ${new Date().toLocaleDateString()}</p>
-            </div>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <thead>
-                <tr style="background-color: #fdfaf7;">
-                  <th style="text-align: left; padding: 10px; border-bottom: 1px solid #eee;">Item</th>
-                  <th style="text-align: center; padding: 10px; border-bottom: 1px solid #eee;">Qty</th>
-                  <th style="text-align: right; padding: 10px; border-bottom: 1px solid #eee;">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${createdOrder.orderItems.map(item => `
-                  <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
-                    <td style="text-align: center; padding: 10px; border-bottom: 1px solid #eee;">${item.qty}</td>
-                    <td style="text-align: right; padding: 10px; border-bottom: 1px solid #eee;">₹${item.price}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-            <div style="text-align: right; line-height: 1.6;">
-              <p style="margin: 0;">Subtotal: ₹${createdOrder.totalPrice}</p>
-              <p style="margin: 0;">Shipping: FREE</p>
-              <h3 style="margin: 10px 0; color: #a67c52;">Total Amount: ₹${createdOrder.totalPrice}</h3>
-            </div>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #777; text-align: center;">
-              <p>Thank you for shopping at Reaina's Haven!</p>
-              <p>Your order is being prepared and will be with you shortly.</p>
-            </div>
-          </div>
-        `
-      }).catch(err => {
-        console.error("❌ Order Email Background Error:", err.message);
-      });
+      try {
+        await sendEmail({
+          email: req.user.email,
+          subject: `Order Confirmed! #${orderIdShort} - Reaina's Haven`,
+          html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3a2d; max-width: 600px; margin: 0 auto; border: 1px solid #e0d8ce; padding: 40px; border-radius: 24px; background-color: #fff;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #2d3a2d; margin: 0; font-family: serif; font-size: 28px;">Reaina's Haven</h1>
+                <p style="font-size: 10px; color: #a67c52; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px;">Botanical Sanctuary & Cafe</p>
+              </div>
+              
+              <div style="background-color: #fcfaf8; padding: 25px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #f0e8dc;">
+                <h2 style="margin: 0; font-size: 20px; color: #2d3a2d;">Order Received! ✨</h2>
+                <p style="margin: 10px 0 0; font-size: 14px; color: #666;">We've received your order and we're getting it ready. If you chose an online payment, please complete it to start processing.</p>
+              </div>
 
-      // Send Order Notification Email to Admin - Non-blocking
-      console.log(`📨 Triggering admin notification email...`);
-      sendEmail({
-        email: process.env.EMAIL_USER,
-        subject: `New Order Received - #${orderIdShort}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h1 style="color: #a67c52; margin: 0;">New Order Alert! 🔔</h1>
-              <p style="font-size: 12px; color: #777;">A new order has been placed on Reaina's Haven.</p>
+              <div style="margin-bottom: 30px;">
+                <p style="margin: 5px 0; font-size: 13px; color: #8c8c73;">Order ID: <b style="color: #2d3a2d;">#${orderIdShort}</b></p>
+                <p style="margin: 5px 0; font-size: 13px; color: #8c8c73;">Date: <b style="color: #2d3a2d;">${new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</b></p>
+                <p style="margin: 5px 0; font-size: 13px; color: #8c8c73;">Payment Method: <b style="color: #2d3a2d;">${paymentMethod}</b></p>
+              </div>
+
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #f0e8dc;">
+                    <th style="text-align: left; padding: 12px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8c8c73;">Item</th>
+                    <th style="text-align: center; padding: 12px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8c8c73;">Qty</th>
+                    <th style="text-align: right; padding: 12px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8c8c73;">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${createdOrder.orderItems.map(item => `
+                    <tr style="border-bottom: 1px solid #f8f5f2;">
+                      <td style="padding: 15px 0; font-size: 14px; color: #2d3a2d; font-weight: 500;">${item.name}</td>
+                      <td style="text-align: center; padding: 15px 0; font-size: 14px; color: #666;">${item.qty}</td>
+                      <td style="text-align: right; padding: 15px 0; font-size: 14px; color: #2d3a2d;">₹${item.price.toLocaleString('en-IN')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+
+              <div style="text-align: right; background-color: #fcfaf8; padding: 20px; border-radius: 12px;">
+                <p style="margin: 0; font-size: 13px; color: #8c8c73;">Subtotal: ₹${createdOrder.totalPrice.toLocaleString('en-IN')}</p>
+                <p style="margin: 5px 0; font-size: 13px; color: #8c8c73;">Shipping: <span style="color: #27ae60; font-weight: bold;">FREE</span></p>
+                <h3 style="margin: 10px 0 0; color: #2d3a2d; font-size: 20px;">Total Amount: ₹${createdOrder.totalPrice.toLocaleString('en-IN')}</h3>
+              </div>
+
+              <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #f0e8dc; text-align: center;">
+                <p style="font-size: 14px; color: #2d3a2d; font-weight: 500; margin: 0;">Thank you for choosing Reaina's Haven!</p>
+                <p style="font-size: 12px; color: #8c8c73; margin: 10px 0 0;">Visit your dashboard to track your order status.</p>
+              </div>
             </div>
-            <div style="border-bottom: 2px solid #a67c52; padding-bottom: 10px; margin-bottom: 20px;">
-              <h2 style="margin: 0; font-size: 18px;">Order Details</h2>
-              <p style="margin: 5px 0; font-size: 14px;">Order ID: <b>#${orderIdShort}</b></p>
-              <p style="margin: 5px 0; font-size: 14px;">Customer Email: <b>${req.user.email}</b></p>
-              <p style="margin: 5px 0; font-size: 14px;">Payment Method: <b>${paymentMethod}</b></p>
-              <p style="margin: 5px 0; font-size: 14px;">Total Amount: <b>₹${createdOrder.totalPrice}</b></p>
+          `
+        });
+      } catch (err) {
+        console.error("❌ User Order Email Error:", err.message);
+      }
+
+      // Send Order Notification Email to Admin
+      try {
+        await sendEmail({
+          email: process.env.EMAIL_USER,
+          subject: `🔔 New Order Received - #${orderIdShort}`,
+          html: `
+            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px; border-radius: 15px;">
+              <h2 style="color: #a67c52; border-bottom: 2px solid #a67c52; padding-bottom: 10px;">New Order Alert!</h2>
+              <p>A new order has been placed on the website.</p>
+              
+              <div style="background: #fdfaf7; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><b>Order ID:</b> #${orderIdShort}</p>
+                <p style="margin: 5px 0;"><b>Customer:</b> ${req.user.name} (${req.user.email})</p>
+                <p style="margin: 5px 0;"><b>Total:</b> ₹${createdOrder.totalPrice.toLocaleString('en-IN')}</p>
+                <p style="margin: 5px 0;"><b>Payment:</b> ${paymentMethod}</p>
+              </div>
+
+              <h3>Shipping Address:</h3>
+              <p style="color: #666; line-height: 1.5;">
+                ${shippingAddress.address}<br>
+                ${shippingAddress.city}, ${shippingAddress.postalCode}<br>
+                ${shippingAddress.country}
+              </p>
+
+              <div style="margin-top: 30px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin" style="background: #a67c52; color: #white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">View in Admin Dashboard</a>
+              </div>
             </div>
-            <p style="text-align: center; margin-top: 20px;">Please check the admin dashboard for full details and fulfillment.</p>
-          </div>
-        `
-      }).catch(err => {
-        console.error("❌ Admin Order Email Background Error:", err.message);
-      });
+          `
+        });
+      } catch (err) {
+        console.error("❌ Admin Order Email Error:", err.message);
+      }
 
       // Emit socket event for new order
       if (req.io) {
@@ -190,32 +209,8 @@ router.get("/:id", isLoggedIn, async (req, res) => {
   }
 });
 
-// @desc    Update order to paid
-// @route   PUT /api/orders/:id/pay
-// @access  Private
-router.put("/:id/pay", isLoggedIn, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-
-    if (order) {
-      order.isPaid = true;
-      order.paidAt = Date.now();
-      order.paymentResult = {
-        id: req.body.id,
-        status: req.body.status,
-        update_time: req.body.update_time,
-        email_address: req.body.payer.email_address,
-      };
-
-      const updatedOrder = await order.save();
-      res.json(updatedOrder);
-    } else {
-      res.status(404).json({ message: "Order not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+// Note: Direct payment update route removed for security. 
+// Payments must be verified via /api/payment/verify in paymentRoutes.js
 
 // @desc    Update order status
 // @route   PUT /api/orders/:id/status
@@ -303,10 +298,18 @@ router.put("/:id/status", isLoggedIn, async (req, res) => {
           </div>
         `;
 
+        // Send to User
         await sendEmail({
           email: populatedOrder.user.email,
           subject: emailSubject,
           html: emailHtml
+        });
+
+        // Send a copy to Admin for records
+        await sendEmail({
+          email: process.env.EMAIL_USER,
+          subject: `[ADMIN COPY] ${emailSubject}`,
+          html: `<h3>Admin Copy of Status Update for ${populatedOrder.user.name}</h3>` + emailHtml
         });
       } catch (err) {
         console.error("Status Email Error:", err.message);

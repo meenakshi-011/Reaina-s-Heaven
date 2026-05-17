@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { API_URL } from "../config";
 import Navbar from "../components/Navbar";
 import ProductsFooter from "../components/ProductsFooter";
-import ProductCard from "../components/productcard";
+import ProductCard from "../components/Productcard";
 import Loader from "../components/Loader";
 
 
