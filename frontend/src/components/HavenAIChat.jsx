@@ -62,6 +62,12 @@ const HavenAIChat = () => {
           },
           body: JSON.stringify({
             message: currentInput,
+            history: messages
+              .filter(msg => msg.text !== "Thinking... ✨")
+              .map(msg => ({
+                role: msg.sender === 'user' ? 'user' : 'assistant',
+                content: msg.text
+              }))
           }),
         }
       );
