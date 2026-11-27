@@ -11,6 +11,14 @@ const CafeItemModal = ({ item, isOpen, onClose }) => {
     item.quantityOptions?.[0] || { label: "Standard", price: item.item_price || 0 }
   );
 
+  React.useEffect(() => {
+    if (item?.quantityOptions && item.quantityOptions.length > 0) {
+      setSelectedQty(item.quantityOptions[0]);
+    } else {
+      setSelectedQty({ label: "Standard", price: item?.item_price || 0 });
+    }
+  }, [item]);
+
   const handleAddToCart = () => {
     addToCart({ 
       ...item, 
@@ -100,21 +108,36 @@ const CafeItemModal = ({ item, isOpen, onClose }) => {
           {/* Quantity Options */}
           {item.quantityOptions && item.quantityOptions.length > 0 && (
             <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Select Quantity/Size:</p>
-              <div className="flex gap-2 flex-wrap">
-                {item.quantityOptions.map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedQty(q)}
-                    className={`px-4 py-2 rounded-xl text-sm transition-all border ${
-                      selectedQty?.label === q.label
-                        ? "bg-[#fdfaf7] border-[#a67c52] text-[#a67c52] font-bold shadow-sm"
-                        : "bg-white border-gray-200 text-gray-600 hover:border-[#a67c52]/50"
-                    }`}
-                  >
-                    {q.label} - ₹{q.price}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-sm font-bold text-gray-800 tracking-wide">Select Quantity / Portion:</p>
+                <span className="text-[11px] font-semibold text-[#a67c52] bg-[#fdfaf7] px-2.5 py-0.5 rounded-full border border-[#a67c52]/20">
+                  {item.quantityOptions.length} Options
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {item.quantityOptions.map((q, i) => {
+                  const isSelected = selectedQty?.label === q.label;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setSelectedQty(q)}
+                      className={`relative flex items-center justify-between p-3 rounded-2xl text-sm transition-all border text-left ${
+                        isSelected
+                          ? "bg-[#fdfaf7] border-[#a67c52] text-[#3e3e3e] shadow-sm ring-1 ring-[#a67c52]"
+                          : "bg-white border-gray-200 text-gray-700 hover:border-[#a67c52]/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${isSelected ? "border-[#a67c52] bg-[#a67c52]" : "border-gray-300"}`}>
+                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <span className="font-semibold text-xs sm:text-sm">{q.label}</span>
+                      </div>
+                      <span className="font-bold text-xs sm:text-sm text-gray-900 shrink-0">₹{q.price}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -127,12 +150,15 @@ const CafeItemModal = ({ item, isOpen, onClose }) => {
                 ? ingredients.join(", ") 
                 : "A delightful culinary creation prepared with the finest ingredients."}
             </p>
-            {item.includes && (
-              <div className="pt-3 border-t border-gray-100">
-                <h4 className="text-[10px] font-black text-[#a67c52] uppercase tracking-wider mb-1">What's Inside:</h4>
-                <p className="text-xs text-gray-500 italic">{item.includes}</p>
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-xs">🍽️</span>
+                <h4 className="text-[11px] font-black text-[#a67c52] uppercase tracking-wider">What's Inside (Accompaniments):</h4>
               </div>
-            )}
+              <p className="text-xs text-gray-600 font-medium bg-[#fcfaf8] p-2.5 rounded-xl border border-[#eee8e0]">
+                {item.includes || "Freshly handcrafted portion served with chef's signature accompaniments, dips & seasoning."}
+              </p>
+            </div>
           </div>
 
           {/* Quality Promises */}

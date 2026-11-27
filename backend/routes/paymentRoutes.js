@@ -112,6 +112,11 @@ router.post("/verify", isLoggedIn, async (req, res) => {
 
       // Payment verified successfully
       order.isPaid = true;
+      order.paymentStatus = "PAID";
+      if (order.orderStatus === "PLACED" || order.status === "PLACED") {
+        order.orderStatus = "CONFIRMED";
+        order.status = "CONFIRMED";
+      }
       order.paidAt = Date.now();
       order.paymentResult = {
         id: razorpay_payment_id,
@@ -121,6 +126,11 @@ router.post("/verify", isLoggedIn, async (req, res) => {
         method: paymentDetails.method,
       };
       await order.save();
+
+      // Emit real-time status update to client
+      if (req.io) {
+        req.io.emit("orderUpdated", order);
+      }
         
         // Log Activity
         await Activity.create({

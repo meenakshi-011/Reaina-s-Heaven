@@ -78,6 +78,12 @@ const cafeItemSchema = new mongoose.Schema(
         price: Number      // 149
       }
     ],
+    item_price: {
+      type: Number
+    },
+    price: {
+      type: Number
+    },
     includes: {
       type: String
     }

@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import path from "path";
 import { Server } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -19,6 +20,8 @@ import statsroutes from "./routes/statsRoutes.js";
 import paymentroutes from "./routes/paymentRoutes.js";
 import contactroutes from "./routes/contactRoutes.js";
 import webhookroutes from "./routes/webhookRoutes.js";
+import reviewroutes from "./routes/reviewRoutes.js";
+import customizationroutes from "./routes/customizationRoutes.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -47,7 +50,11 @@ app.use(cors());
 // Webhook route needs raw body for signature verification
 app.use("/api/webhook", express.raw({ type: 'application/json' }), webhookroutes);
 
-app.use(express.json());
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+
+// Static files for reference images and assets
+app.use("/public", express.static(path.resolve(process.cwd(), "public")));
 
 // Log incoming requests
 app.use((req, res, next) => {
@@ -66,6 +73,8 @@ app.use("/api/orders", orderroutes);
 app.use("/api/stats", statsroutes);
 app.use("/api/payment", paymentroutes);
 app.use("/api/contact", contactroutes);
+app.use("/api/reviews", reviewroutes);
+app.use("/api/customizations", customizationroutes);
 app.get("/", (req, res) => {
   res.send("<h1>🌿 Reaina's Haven API is Live!</h1><p>The botanical sanctuary backend is running successfully.</p>");
 });

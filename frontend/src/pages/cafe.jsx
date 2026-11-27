@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { MapPin, Navigation } from "lucide-react";
+import toast from "react-hot-toast";
 import { API_URL, SOCKET_URL } from "../config";
 import Navbar from "../components/Navbar";
 import ProductsFooter from "../components/ProductsFooter";
 import CafeCard from "../components/CafeCard";
 import CafeItemModal from "../components/CafeItemModal";
 import Loader from "../components/Loader";
+import { parseNominatimAddress } from "../components/DeliveryLocationMap";
 
 
 const Cafe = () => {
@@ -17,6 +20,80 @@ const Cafe = () => {
   const [error, setError] = useState(null);
   const [selectedCafeItem, setSelectedCafeItem] = useState(null);
   const { id } = useParams();
+
+  // Exact delivery location state (never show numeric lat/lng)
+  const [exactLocation, setExactLocation] = useState(() => {
+    try {
+      const saved = localStorage.getItem("userExactLocation");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.exactLocation || "";
+      }
+    } catch (e) {}
+    return "";
+  });
+  const [locating, setLocating] = useState(false);
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setLocating(false);
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const parsed = parseNominatimAddress(data);
+            const resolved = parsed?.fullAddress || data.display_name || "Detected Pinpoint Location";
+            setExactLocation(resolved);
+            localStorage.setItem(
+              "userExactLocation",
+              JSON.stringify({
+                exactLocation: resolved,
+                coords: { latitude, longitude },
+                address: {
+                  street: parsed?.street || "",
+                  area: parsed?.area || "",
+                  city: parsed?.city || "",
+                  state: parsed?.state || "",
+                  pincode: parsed?.pincode || "",
+                  landmark: parsed?.landmark || "",
+                },
+              })
+            );
+            toast.success("📍 Exact delivery location set for cafe treats!", { icon: "☕" });
+          } else {
+            const fallback = "Exact Pinpoint Location (GPS Verified)";
+            setExactLocation(fallback);
+          }
+        } catch (err) {
+          const fallback = "Exact Pinpoint Location (GPS Verified)";
+          setExactLocation(fallback);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error("Location permission denied. You can enter your delivery address at checkout.");
+        } else {
+          toast.error("Unable to detect device location.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -158,6 +235,40 @@ const Cafe = () => {
           </div>
         ) : (
           <>
+            {/* Delivery Location Bar - Exact Location Display */}
+            <div className="bg-white border border-[#e0d8ce] rounded-3xl p-4 sm:p-5 mb-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#fdfaf7] border border-[#a67c52]/30 flex items-center justify-center text-[#a67c52] shrink-0">
+                  <MapPin size={20} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-[#a67c52]">
+                      Delivering Fresh From Our Kitchen
+                    </p>
+                    {exactLocation && (
+                      <span className="text-[9px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full">
+                        Exact Pinpoint Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-serif font-bold text-[#3e3e3e] mt-0.5 line-clamp-1">
+                    {exactLocation || "Ranjhi, Jabalpur & surrounding regions (Click to set exact location)"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleDetectLocation}
+                disabled={locating}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#fdfaf7] hover:bg-[#a67c52] border border-[#a67c52] text-[#a67c52] hover:text-white transition-all text-xs font-bold shadow-sm shrink-0 active:scale-95"
+              >
+                <Navigation size={13} />
+                <span>
+                  {locating ? "Detecting Location..." : exactLocation ? "📍 Update Exact Location" : "📍 Use My Current Location"}
+                </span>
+              </button>
+            </div>
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
               <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
                 {categories.map((cat, idx) => (

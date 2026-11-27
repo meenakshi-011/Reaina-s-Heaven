@@ -2,13 +2,23 @@ import React, { useState } from "react";
 import { Star, Plus, Heart } from "lucide-react";
 import toast from "react-hot-toast";
 import { API_URL } from "../config";
+import { useCart } from "../context/CartContext";
 
 const CafeCard = ({ item, onImageClick }) => {
+  const { addToCart } = useCart();
   const [wishlist, setWishlist] = useState(false);
   // Ensure we have a consistent price structure
   const [selectedQty, setSelectedQty] = useState(
     item.quantityOptions?.[0] || { label: "Standard", price: item.item_price || 0 }
   );
+
+  React.useEffect(() => {
+    if (item?.quantityOptions && item.quantityOptions.length > 0) {
+      setSelectedQty(item.quantityOptions[0]);
+    } else {
+      setSelectedQty({ label: "Standard", price: item?.item_price || 0 });
+    }
+  }, [item]);
 
   // Normalize ingredients and filters
   const ingredients = Array.isArray(item.ingredients) 
@@ -146,12 +156,13 @@ const CafeCard = ({ item, onImageClick }) => {
               ? ingredients.join(", ") 
               : "A delightful culinary creation prepared with the finest ingredients."}
           </p>
-          {item.includes && (
-            <div className="mt-2 pt-2 border-t border-gray-50">
-              <p className="text-[10px] text-[#a67c52] font-bold uppercase tracking-tighter">What's Inside:</p>
-              <p className="text-[10px] text-gray-400 italic">{item.includes}</p>
-            </div>
-          )}
+          {/* What's Inside */}
+          <div className="mt-2 pt-2 border-t border-gray-100">
+            <p className="text-[10px] text-[#a67c52] font-bold uppercase tracking-wider mb-0.5">What's Inside:</p>
+            <p className="text-[10px] text-gray-500 italic line-clamp-2 leading-relaxed">
+              {item.includes || "Chef's special preparation served fresh with signature accompaniments & seasoning"}
+            </p>
+          </div>
         </div>
 
         {/* ── FOOTER ACTIONS ── */}
@@ -181,7 +192,20 @@ const CafeCard = ({ item, onImageClick }) => {
           </div>
 
           {/* ADD Button (Swiggy/Zomato style) */}
-          <button className="shrink-0 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-sm px-6 py-2 rounded-lg flex items-center justify-center shadow-sm transition-colors group/btn relative overflow-hidden">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addToCart({
+                ...item,
+                name: item.item_name,
+                price: selectedQty?.price || item.item_price || 0,
+                image: item.imageurl || item.imageUrl || item.imageul,
+                selectedQty,
+              });
+              toast.success(`Added ${item.item_name} to cart!`, { icon: "🍰" });
+            }}
+            className="shrink-0 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-sm px-6 py-2 rounded-lg flex items-center justify-center shadow-sm transition-colors group/btn relative overflow-hidden active:scale-95"
+          >
             <span className="relative z-10 flex items-center gap-1">
               ADD <Plus size={14} className="stroke-[3px]" />
             </span>

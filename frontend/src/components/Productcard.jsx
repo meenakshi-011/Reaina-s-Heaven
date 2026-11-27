@@ -179,18 +179,18 @@ function ProductCard({ product, isWishlisted, onQuickView }) {
         </div>
 
         {/* Product Inclusions */}
-        {product.includes && (
-          <div className="mt-3 pt-3 border-t border-[#f8f5f2]">
-            <span className="text-[9px] font-bold text-[#a67c52] uppercase tracking-wider block mb-1.5">Includes:</span>
-            <div className="flex flex-wrap gap-1">
-              {product.includes.split(',').map((item, idx) => (
+        <div className="mt-3 pt-3 border-t border-[#f8f5f2]">
+          <span className="text-[9px] font-bold text-[#a67c52] uppercase tracking-wider block mb-1.5">Includes:</span>
+          <div className="flex flex-wrap gap-1">
+            {(product.includes || "Handcrafted Piece, Care Guide, Luxury Gift Wrap")
+              .split(',')
+              .map((item, idx) => (
                 <span key={idx} className="bg-[#fdfaf7] text-[#6b5c47] text-[9px] px-1.5 py-0.5 rounded border border-[#e0d8ce]/50">
                   {item.trim()}
                 </span>
               ))}
-            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── BRAND & RATING STRIP ──────────── */}

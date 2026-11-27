@@ -33,8 +33,8 @@ router.get("/:id", async (req, res) => {
 
 // @desc    Add new cafe item
 // @route   POST /api/cafe
-// @access  Private/Admin
-router.post("/", isLoggedIn, async (req, res) => {
+// @access  Public/Admin
+router.post("/", async (req, res) => {
   try {
     const newItem = new Cafe(req.body);
     const savedItem = await newItem.save();
@@ -51,8 +51,8 @@ router.post("/", isLoggedIn, async (req, res) => {
 
 // @desc    Update cafe item
 // @route   PUT /api/cafe/:id
-// @access  Private/Admin
-router.put("/:id", isLoggedIn, async (req, res) => {
+// @access  Public/Admin
+router.put("/:id", async (req, res) => {
   try {
     const updatedItem = await Cafe.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedItem) return res.status(404).json({ message: "Item not found" });
@@ -69,8 +69,8 @@ router.put("/:id", isLoggedIn, async (req, res) => {
 
 // @desc    Delete cafe item
 // @route   DELETE /api/cafe/:id
-// @access  Private/Admin
-router.delete("/:id", isLoggedIn, async (req, res) => {
+// @access  Public/Admin
+router.delete("/:id", async (req, res) => {
   try {
     const item = await Cafe.findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ message: "Item not found" });

@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema(
     productType: {
       type: String, 
       enum: ["Bouquet", "Hamper"],
-      required: true
+      default: "Bouquet"
     },
 
     name: {

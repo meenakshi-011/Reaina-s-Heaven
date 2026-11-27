@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import ProductsFooter from "../components/ProductsFooter";
 import ProductCard from "../components/Productcard";
 import Loader from "../components/Loader";
+import ReviewsSection from "../components/ReviewsSection";
 
 
 import { getProducts } from "../services/api";
@@ -406,6 +407,13 @@ const Products = () => {
           </div>
         </div>
       </section>
+
+      {/* ── REAL-TIME VERIFIED CUSTOMER REVIEWS ─────── */}
+      <ReviewsSection 
+        currentSection="products" 
+        title="Verified Customer Product Reviews" 
+        subtitle="Real-time ratings from Jabalpur patrons who ordered our floral arrangements & gifts." 
+      />
 
       {/* ── FOOTER ───────────────────────── */}
       <ProductsFooter />

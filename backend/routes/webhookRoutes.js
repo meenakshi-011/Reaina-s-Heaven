@@ -35,6 +35,11 @@ const processSuccessfulPayment = async (rzpOrderId, rzpPaymentId) => {
 
     // Update order status
     order.isPaid = true;
+    order.paymentStatus = "PAID";
+    if (order.orderStatus === "PLACED" || order.status === "PLACED") {
+      order.orderStatus = "CONFIRMED";
+      order.status = "CONFIRMED";
+    }
     order.paidAt = Date.now();
     order.paymentResult = {
       ...order.paymentResult,

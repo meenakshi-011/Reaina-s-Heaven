@@ -1,339 +1,996 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import ProductsFooter from '../components/ProductsFooter';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import ProductsFooter from "../components/ProductsFooter";
+import Loader from "../components/Loader";
+import CakeVisualPreview from "../components/customStudio/CakeVisualPreview";
+import HamperVisualPreview from "../components/customStudio/HamperVisualPreview";
+import BouquetVisualPreview from "../components/customStudio/BouquetVisualPreview";
+import ReferenceImageUploader from "../components/customStudio/ReferenceImageUploader";
+import LivePriceSidebar from "../components/customStudio/LivePriceSidebar";
+import AICustomizationDrawer from "../components/customStudio/AICustomizationDrawer";
+import CustomizationRequestDetailModal from "../components/customStudio/CustomizationRequestDetailModal";
 import {
-  Palette, Flower2, Gift, MessageSquare, Calendar,
-  ChevronRight, Clock, Package, Sparkles, AlertCircle,
-  BookOpen, Coffee, Heart, Phone,
-} from 'lucide-react';
+  getCustomizationConfigs,
+  calculateCustomizationPrice,
+  createCustomizationRequest,
+  getMyCustomizationRequests,
+  getProducts,
+  getCafes,
+  createPaymentOrder,
+  verifyPayment,
+} from "../services/api";
+import { io } from "socket.io-client";
+import { SOCKET_URL, RAZORPAY_KEY_ID } from "../config";
+import toast from "react-hot-toast";
+import {
+  Sparkles,
+  Sliders,
+  Bot,
+  Package,
+  Cake,
+  Flower2,
+  Gift,
+  Utensils,
+  HeartHandshake,
+  Clock,
+  CheckCircle2,
+  Calendar,
+  ArrowRight,
+  Info,
+  ChevronRight,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 
-const options = [
-  {
-    icon: <Flower2 size={28} className="text-[#a67c52]" />,
-    title: 'Custom Bouquets',
-    badge: 'Most Popular',
-    badgeColor: 'bg-green-100 text-green-700',
-    desc: 'Choose your blooms, colour palette, wrap style, and message. Our florists will craft a one-of-a-kind arrangement for your occasion.',
-    options: [
-      'Preferred flowers / colour theme',
-      'Bouquet size — Small, Medium, Large, Grand',
-      'Wrapping style — Kraft, Silk, Rustic, Luxury',
-      'Add-ons — ribbons, dried flowers, baby\'s breath',
-      'Personal message card (free)',
-    ],
-    leadTime: '24 hours in advance',
-    extraCost: 'No extra charge for colour requests',
-  },
-  {
-    icon: <Gift size={28} className="text-[#a67c52]" />,
-    title: 'Custom Gift Hampers',
-    badge: 'Great for Gifting',
-    badgeColor: 'bg-[#a67c52]/10 text-[#a67c52]',
-    desc: 'Mix and match from our full catalog — flowers, books, cafe goods, candles — to build a completely personalized hamper.',
-    options: [
-      'Choose items: flowers + books + cafe goods + candles',
-      'Choose box style — Luxury kraft, Wicker basket, Premium tote',
-      'Add custom tissue paper, shredded filler, sticker seals',
-      'Custom printed label with recipient\'s name',
-      'Heartfelt message card (free)',
-    ],
-    leadTime: '48 hours in advance',
-    extraCost: 'Custom label & premium box: +₹99–₹199',
-  },
-  {
-    icon: <Coffee size={28} className="text-[#a67c52]" />,
-    title: 'Custom Cafe Orders',
-    badge: 'Bespoke Bakes',
-    badgeColor: 'bg-orange-100 text-orange-700',
-    desc: 'Order custom bakes, cakes, or specialty food items for events — with dietary preferences, custom flavours, and special decoration.',
-    options: [
-      'Flavor customization (chocolate, red velvet, vanilla, etc.)',
-      'Dietary needs — eggless, vegan, gluten-free, sugar-free',
-      'Custom text or design on cakes / brownies',
-      'Bulk event orders (10+ units)',
-      'Theme-based decoration',
-    ],
-    leadTime: '48–72 hours in advance',
-    extraCost: 'Depends on complexity; quoted individually',
-  },
-  {
-    icon: <BookOpen size={28} className="text-[#a67c52]" />,
-    title: 'Curated Book Packs',
-    badge: 'For Book Lovers',
-    badgeColor: 'bg-blue-100 text-blue-700',
-    desc: 'Let us curate a hand-picked selection of books based on a theme, genre, or person\'s personality — perfect as a thoughtful gift.',
-    options: [
-      'Genre preference — fiction, self-help, wellness, art',
-      'Reading level — beginner, intermediate, advanced',
-      'Theme — travel, healing, romance, leadership, etc.',
-      'Recipient personality brief (optional)',
-      'Custom book marks or sticky note packs add-on',
-    ],
-    leadTime: '24–48 hours',
-    extraCost: 'Curated pack note card: free',
-  },
-];
-
-const process = [
-  {
-    step: '01',
-    icon: <MessageSquare size={20} className="text-[#a67c52]" />,
-    title: 'Tell Us Your Vision',
-    desc: 'Use the "Special Instructions" field at checkout, or reach out via our Contact page or WhatsApp. Share as much detail as possible — occasion, colour preferences, dietary needs, recipient personality, budget.',
-  },
-  {
-    step: '02',
-    icon: <Phone size={20} className="text-[#a67c52]" />,
-    title: 'We\'ll Consult With You',
-    desc: 'For complex or high-value custom orders, a team member will call or WhatsApp you within 4 business hours to confirm details, share design concepts (if applicable), and finalize your quote.',
-  },
-  {
-    step: '03',
-    icon: <Calendar size={20} className="text-[#a67c52]" />,
-    title: 'Confirm & Advance Payment',
-    desc: 'Custom orders above ₹1,000 require a 50% advance via Razorpay (UPI, card, netbanking). The remaining 50% is collected at delivery. This ensures your slot and materials are reserved.',
-  },
-  {
-    step: '04',
-    icon: <Sparkles size={20} className="text-[#a67c52]" />,
-    title: 'We Craft With Love',
-    desc: 'Our artisans, florists, and bakers get to work creating your personalized order. You\'ll receive a progress photo (for orders above ₹2,000) via WhatsApp before we finalize.',
-  },
-  {
-    step: '05',
-    icon: <Package size={20} className="text-[#a67c52]" />,
-    title: 'Delivery or Pickup',
-    desc: 'Your custom order is carefully packaged and delivered on your chosen date. You can also pick it up from our Ranjhi store — we\'ll have it beautifully wrapped and ready.',
-  },
-];
-
-const faqs = [
-  {
-    q: 'How far in advance should I place a custom order?',
-    a: 'For bouquets, at least 24 hours. For hampers and custom bakes, 48–72 hours. For large events or weddings, please reach out at least 1 week in advance.',
-  },
-  {
-    q: 'Can I request a budget for a custom hamper?',
-    a: 'Absolutely! Just tell us your budget and occasion — we\'ll build the best possible hamper within your price range.',
-  },
-  {
-    q: 'Is there a minimum order value for custom orders?',
-    a: 'There\'s no minimum for custom bouquets. For custom hampers and event orders, a minimum of ₹500 applies.',
-  },
-  {
-    q: 'Are custom orders refundable?',
-    a: 'Unfortunately, custom/personalized orders are non-refundable once production has started. However, if the final product is significantly different from what was agreed, we\'ll work with you to fix it.',
-  },
-  {
-    q: 'Can I add a photo or printed element to my order?',
-    a: 'Yes! We offer custom printed labels and message cards. For photo frames or printed photo add-ons, contact us directly and we\'ll guide you on the best options.',
-  },
-  {
-    q: 'Do you handle corporate or bulk customization?',
-    a: 'Yes — corporate gifting with custom branding, logos, and bulk quantities is available. Email corporate@rainashaven.com for a dedicated quote.',
-  },
-];
+const CATEGORY_ICONS = {
+  cakes: Cake,
+  food: Utensils,
+  hampers: Gift,
+  flowers: Flower2,
+  personalized_gifts: HeartHandshake,
+  other: Sparkles,
+};
 
 const Customization = () => {
-  const [openFaq, setOpenFaq] = useState(null);
+  const navigate = useNavigate();
+  const isLoggedIn = Boolean(localStorage.getItem("token"));
+
+  // Navigation & View Mode
+  const [activeTab, setActiveTab] = useState("STUDIO"); // 'STUDIO' | 'MY_REQUESTS'
+  const [customizationMode, setCustomizationMode] = useState("INTERACTIVE"); // 'INTERACTIVE' | 'AI_ASSISTED'
+  const [selectedCategory, setSelectedCategory] = useState("cakes");
+
+  // Configurations & Catalog
+  const [configs, setConfigs] = useState([]);
+  const [currentConfig, setCurrentConfig] = useState(null);
+  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Form State
+  const [selectedOptions, setSelectedOptions] = useState({});
+  const [selectedProducts, setSelectedProducts] = useState([]); // for Hamper builder
+  const [packagingOptionName, setPackagingOptionName] = useState("");
+  const [decorationOptionName, setDecorationOptionName] = useState("");
+  const [referenceImages, setReferenceImages] = useState([]);
+  const [specifications, setSpecifications] = useState({
+    messageOnProduct: "",
+    dietaryRequirements: [],
+    designDescription: "",
+    recipientName: "",
+    engravingText: "",
+    specialInstructions: "",
+  });
+  const [budget, setBudget] = useState(1500);
+  const [occasion, setOccasion] = useState("Birthday");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState({
+    house: "",
+    area: "",
+    city: "Jabalpur",
+    pincode: "482001",
+  });
+
+  // Price Calculation State
+  const [pricing, setPricing] = useState(null);
+  const [calculatingPrice, setCalculatingPrice] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // My Requests State
+  const [myRequests, setMyRequests] = useState([]);
+  const [selectedRequestModal, setSelectedRequestModal] = useState(null);
+
+  // AI Drawer State
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+
+  // 1. Initial Load of Configs & Inventory
+  useEffect(() => {
+    const initData = async () => {
+      setLoading(true);
+      try {
+        const [configList, prodData, cafeData] = await Promise.all([
+          getCustomizationConfigs().catch(() => []),
+          getProducts().catch(() => []),
+          getCafes().catch(() => []),
+        ]);
+
+        if (Array.isArray(configList) && configList.length > 0) {
+          setConfigs(configList);
+          const initial = configList.find((c) => c.category === selectedCategory) || configList[0];
+          setCurrentConfig(initial);
+          setSelectedCategory(initial.category);
+
+          // Populate default option values
+          const initialOpts = {};
+          (initial.fields || []).forEach((f) => {
+            if (f.defaultValue !== null && f.defaultValue !== undefined) {
+              initialOpts[f.id] = f.defaultValue;
+            }
+          });
+          setSelectedOptions(initialOpts);
+        }
+
+        // Combine retail products and cafe items for hamper builder
+        const combined = [
+          ...(Array.isArray(prodData) ? prodData : []).map((p) => ({
+            ...p,
+            type: "Product",
+          })),
+          ...(Array.isArray(cafeData) ? cafeData : []).map((c) => ({
+            _id: c._id,
+            name: c.item_name,
+            price: c.price || c.item_price || 0,
+            imageUrl: c.imageurl || c.imageUrl || "",
+            category: c.category,
+            type: "Cafe",
+          })),
+        ];
+        setCatalogProducts(combined);
+      } catch (err) {
+        console.error("Failed to initialize studio:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initData();
+  }, []);
+
+  // 2. Fetch User's Existing Requests
+  const fetchUserRequests = async () => {
+    if (!isLoggedIn) return;
+    try {
+      const data = await getMyCustomizationRequests();
+      setMyRequests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn("Could not load user requests:", err.message);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "MY_REQUESTS") {
+      fetchUserRequests();
+    }
+  }, [activeTab, isLoggedIn]);
+
+  // 3. Socket.IO Real-time Status Sync
+  useEffect(() => {
+    const socket = io(SOCKET_URL);
+
+    socket.on("customizationStatusUpdated", (data) => {
+      toast.success(`Request ${data.status.replace("_", " ")}!`, { icon: "✨" });
+      fetchUserRequests();
+      if (selectedRequestModal && selectedRequestModal._id === data.requestId) {
+        setSelectedRequestModal((prev) => ({ ...prev, status: data.status }));
+      }
+    });
+
+    socket.on("newQuoteGenerated", (data) => {
+      toast.success(`New quotation (v${data.version}) ready for ₹${data.total}!`, {
+        icon: "📜",
+        duration: 6000,
+      });
+      fetchUserRequests();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [selectedRequestModal]);
+
+  // 4. Change Active Category
+  const handleCategorySelect = (categoryKey) => {
+    setSelectedCategory(categoryKey);
+    const matched = configs.find((c) => c.category === categoryKey);
+    setCurrentConfig(matched);
+
+    if (matched) {
+      const initialOpts = {};
+      (matched.fields || []).forEach((f) => {
+        if (f.defaultValue !== null && f.defaultValue !== undefined) {
+          initialOpts[f.id] = f.defaultValue;
+        }
+      });
+      setSelectedOptions(initialOpts);
+      setPackagingOptionName(matched.packagingOptions?.[0]?.name || "");
+      setDecorationOptionName(matched.decorationOptions?.[0]?.name || "");
+    }
+  };
+
+  // 5. Authoritative Price Recalculation Effect (Debounced)
+  useEffect(() => {
+    let active = true;
+    const fetchPrice = async () => {
+      if (!selectedCategory) return;
+      setCalculatingPrice(true);
+      try {
+        const res = await calculateCustomizationPrice({
+          category: selectedCategory,
+          selectedOptions,
+          selectedProducts,
+          packagingOptionName,
+          decorationOptionName,
+        });
+        if (active) setPricing(res);
+      } catch (err) {
+        console.warn("Price calculation:", err.message);
+      } finally {
+        if (active) setCalculatingPrice(false);
+      }
+    };
+
+    const timer = setTimeout(fetchPrice, 200);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [selectedCategory, selectedOptions, selectedProducts, packagingOptionName, decorationOptionName]);
+
+  // 6. Option Changes
+  const handleOptionChange = (fieldId, val) => {
+    setSelectedOptions((prev) => ({
+      ...prev,
+      [fieldId]: val,
+    }));
+  };
+
+  // 7. Hamper Product Selection Toggle
+  const toggleHamperProduct = (product) => {
+    const pId = product._id;
+    const exists = selectedProducts.some((p) => (p._id || p.product || p.id) === pId);
+    if (exists) {
+      setSelectedProducts((prev) => prev.filter((p) => (p._id || p.product || p.id) !== pId));
+    } else {
+      setSelectedProducts((prev) => [
+        ...prev,
+        {
+          _id: pId,
+          product: pId,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          image: product.imageUrl,
+        },
+      ]);
+    }
+  };
+
+  // 8. Submit Final Customization Request
+  const handleSubmit = async () => {
+    if (!isLoggedIn) {
+      toast.error("Please login to submit your custom design.");
+      navigate("/login");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        category: selectedCategory,
+        customizationMode,
+        selectedOptions,
+        selectedProducts,
+        packagingOptionName,
+        decorationOptionName,
+        specifications: {
+          ...specifications,
+          messageOnProduct: selectedOptions.cakeMessage || selectedOptions.cardMessage || specifications.messageOnProduct,
+        },
+        referenceImages,
+        budget: Number(budget) || null,
+        occasion,
+        deliveryDate: deliveryDate || undefined,
+        deliveryAddress,
+      };
+
+      const result = await createCustomizationRequest(payload);
+      toast.success(result.message || "Customization request submitted!");
+      setActiveTab("MY_REQUESTS");
+      fetchUserRequests();
+    } catch (err) {
+      toast.error(err.message || "Submission failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 9. Payment Integration for Approved Quotation
+  const handleProceedToPay = async (request, quote) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login to proceed with payment.");
+        navigate("/login");
+        return;
+      }
+
+      toast.loading("Initiating secure Razorpay checkout...", { id: "payment-toast" });
+
+      const paymentOrder = await createPaymentOrder({
+        amount: quote.total,
+        currency: "INR",
+        receipt: `custom_${request._id}`,
+      });
+
+      toast.dismiss("payment-toast");
+
+      if (!paymentOrder || !paymentOrder.id) {
+        throw new Error("Failed to initialize payment gateway order.");
+      }
+
+      // Check if Razorpay checkout script is loaded
+      if (typeof window.Razorpay === "undefined") {
+        toast.error("Payment gateway is initializing. Please click again.");
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        document.body.appendChild(script);
+        return;
+      }
+
+      const options = {
+        key: RAZORPAY_KEY_ID || "rzp_test_placeholder",
+        amount: paymentOrder.amount,
+        currency: paymentOrder.currency,
+        name: "Reaina's Heaven",
+        description: `Customization Order #${request.requestNumber}`,
+        order_id: paymentOrder.id,
+        handler: async function (response) {
+          try {
+            toast.loading("Verifying payment...", { id: "verify-toast" });
+            const verifyRes = await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              db_order_id: request._id,
+            });
+
+            toast.dismiss("verify-toast");
+            toast.success("Payment successful! Your bespoke order is now confirmed.");
+            setSelectedRequestModal(null);
+            fetchUserRequests();
+          } catch (e) {
+            toast.dismiss("verify-toast");
+            toast.error(e.message || "Payment verification failed");
+          }
+        },
+        prefill: {
+          name: request.customer?.name || "",
+          email: request.customer?.email || "",
+          contact: request.customer?.phone || "",
+        },
+        theme: { color: "#a67c52" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      toast.dismiss("payment-toast");
+      toast.error(err.message || "Payment failed");
+    }
+  };
+
+  // 10. AI Brief Application into Studio
+  const handleApplyAIBrief = (brief) => {
+    if (brief.category && configs.some((c) => c.category === brief.category)) {
+      handleCategorySelect(brief.category);
+    }
+    if (brief.budget) setBudget(brief.budget);
+    if (brief.occasion) setOccasion(brief.occasion);
+
+    setSpecifications((prev) => ({
+      ...prev,
+      designDescription: brief.designDescription || prev.designDescription,
+      specialInstructions: brief.specialInstructions || prev.specialInstructions,
+    }));
+
+    if (Array.isArray(brief.suggestedProducts) && brief.suggestedProducts.length > 0) {
+      setSelectedProducts(brief.suggestedProducts);
+    }
+  };
+
+  if (loading) return <Loader />;
 
   return (
-    <div className="min-h-screen bg-[#f8f5f2] flex flex-col">
+    <div className="min-h-screen bg-[#FAF8F5] text-gray-800 flex flex-col font-sans">
       <Navbar />
 
-      {/* ── HERO ──────────────────────────────────── */}
-      <section className="relative pt-32 pb-16 px-6 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-16 right-8 w-80 h-80 bg-[#c8a97e]/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-64 bg-green-800/5 rounded-full blur-3xl" />
-        </div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <span className="inline-block bg-[#a67c52]/10 text-[#a67c52] uppercase tracking-[0.2em] text-xs font-bold px-4 py-2 rounded-full mb-6">
-            Make It Yours
-          </span>
-          <h1 className="text-5xl md:text-6xl font-serif text-[#3e3e3e] mb-6 leading-tight">
-            Customization{' '}
-            <span className="text-green-800 italic">Guide</span>
+      {/* Hero Studio Banner */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#f2ece4] via-[#f7f2ea] to-[#FAF8F5] pt-12 pb-10 border-b border-[#ebdccf]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#a67c52]/10 border border-[#a67c52]/20 text-[#a67c52] text-xs font-semibold uppercase tracking-wider shadow-2xs">
+            <Sparkles size={14} className="animate-spin text-[#a67c52]" />
+            <span>Reaina Custom Studio</span>
+          </div>
+
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-gray-900 tracking-tight">
+            Your Imagination. <span className="text-[#a67c52] italic">Your Creation.</span>
           </h1>
-          <p className="text-gray-500 max-w-2xl mx-auto text-lg leading-relaxed">
-            Every order at Reaina's Haven can be made uniquely yours. From flower
-            colours to hamper contents to custom bakes — here's everything you need to
-            know about personalizing your order.
+
+          <p className="max-w-2xl mx-auto text-sm md:text-base text-gray-600 leading-relaxed font-light">
+            Create something uniquely yours. Customize your favourite products, share your inspiration, and let our master bakers, florists, and designers bring your ideas to life.
           </p>
-          <div className="flex justify-center gap-4 mt-8 flex-wrap">
-            <Link to="/contactus" className="bg-[#a67c52] text-white px-7 py-3 rounded-full font-bold hover:bg-[#3e3e3e] transition-all shadow-lg">
-              Start a Custom Order →
-            </Link>
-            <Link to="/products" className="bg-white text-[#3e3e3e] border border-[#e0d8ce] px-7 py-3 rounded-full font-bold hover:border-[#a67c52] hover:text-[#a67c52] transition-all">
-              Browse Products
-            </Link>
+
+          {/* Navigation Controls */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+            <button
+              onClick={() => setActiveTab("STUDIO")}
+              className={`px-5 py-2.5 rounded-2xl text-xs md:text-sm font-semibold transition-all shadow-xs cursor-pointer ${
+                activeTab === "STUDIO"
+                  ? "bg-[#2d3a2d] text-white shadow-md"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Interactive Studio
+            </button>
+
+            <button
+              onClick={() => {
+                if (!isLoggedIn) {
+                  toast.error("Please login to view your custom requests.");
+                  navigate("/login");
+                  return;
+                }
+                setActiveTab("MY_REQUESTS");
+              }}
+              className={`px-5 py-2.5 rounded-2xl text-xs md:text-sm font-semibold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "MY_REQUESTS"
+                  ? "bg-[#2d3a2d] text-white shadow-md"
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              <span>My Custom Requests</span>
+              {myRequests.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-[#a67c52] text-white text-[10px] flex items-center justify-center font-bold">
+                  {myRequests.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setAiDrawerOpen(true)}
+              className="px-5 py-2.5 rounded-2xl text-xs md:text-sm font-semibold bg-gradient-to-r from-[#a67c52] to-[#c29668] text-white shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Bot size={16} />
+              <span>Ask AI Consultant</span>
+            </button>
           </div>
         </div>
       </section>
 
-      {/* ── CUSTOMIZATION OPTIONS ─────────────────── */}
-      <section className="px-6 pb-16">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="text-[#a67c52] uppercase tracking-widest text-xs font-bold block mb-3">What We Can Customize</span>
-            <h2 className="text-3xl font-serif text-[#3e3e3e]">Pick Your Personalization</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {options.map((opt, i) => (
-              <div key={i} className="bg-white rounded-[2rem] border border-[#e0d8ce] p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className="flex items-start justify-between mb-5">
-                  <div className="w-14 h-14 bg-[#f8f5f2] rounded-2xl flex items-center justify-center">
-                    {opt.icon}
-                  </div>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${opt.badgeColor}`}>{opt.badge}</span>
-                </div>
-                <h3 className="font-serif text-xl font-bold text-[#3e3e3e] mb-3">{opt.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-5">{opt.desc}</p>
+      {/* Main Studio Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        {activeTab === "STUDIO" ? (
+          <div className="space-y-8">
+            {/* Category Ribbon */}
+            <div className="space-y-3">
+              <span className="text-xs uppercase tracking-wider font-bold text-gray-400">Select Customization Category</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {configs.map((cfg) => {
+                  const Icon = CATEGORY_ICONS[cfg.category] || Sparkles;
+                  const isSelected = selectedCategory === cfg.category;
 
-                <div className="mb-5">
-                  <p className="text-xs font-bold text-[#a67c52] uppercase tracking-wider mb-3">You Can Customize</p>
-                  <ul className="space-y-2">
-                    {opt.options.map((o, j) => (
-                      <li key={j} className="flex items-center gap-2 text-sm text-gray-600">
-                        <span className="w-1.5 h-1.5 bg-[#a67c52] rounded-full shrink-0" />
-                        {o}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                  return (
+                    <button
+                      key={cfg.category}
+                      onClick={() => handleCategorySelect(cfg.category)}
+                      className={`p-3.5 rounded-2xl border text-left transition-all duration-300 flex flex-col justify-between h-28 cursor-pointer relative overflow-hidden group ${
+                        isSelected
+                          ? "bg-white border-[#a67c52] shadow-md ring-2 ring-[#a67c52]/20"
+                          : "bg-white/70 hover:bg-white border-[#e3d7cb] hover:border-[#a67c52]/50 shadow-xs"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                            isSelected ? "bg-[#a67c52] text-white" : "bg-[#f5eee6] text-[#a67c52]"
+                          }`}
+                        >
+                          <Icon size={18} />
+                        </div>
+                        {isSelected && (
+                          <span className="w-2 h-2 rounded-full bg-[#a67c52] animate-ping" />
+                        )}
+                      </div>
 
-                <div className="flex gap-4 pt-5 border-t border-[#f0ebe4]">
-                  <div className="flex items-center gap-2">
-                    <Clock size={14} className="text-[#a67c52]" />
-                    <span className="text-xs text-gray-500">Lead time: <strong className="text-[#3e3e3e]">{opt.leadTime}</strong></span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">💡 {opt.extraCost}</p>
+                      <div>
+                        <p className="text-xs font-bold text-gray-900 group-hover:text-[#a67c52] transition-colors line-clamp-1">
+                          {cfg.displayName}
+                        </p>
+                        <p className="text-[10px] text-gray-400 font-medium">Starts ₹{cfg.basePrice}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* ── PROCESS ───────────────────────────────── */}
-      <section className="px-6 pb-16 bg-white">
-        <div className="max-w-4xl mx-auto py-16">
-          <div className="text-center mb-12">
-            <span className="text-[#a67c52] uppercase tracking-widest text-xs font-bold block mb-3">How It Works</span>
-            <h2 className="text-3xl font-serif text-[#3e3e3e]">The Custom Order Process</h2>
-          </div>
-          <div className="relative">
-            {/* Vertical connector line */}
-            <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-[#e0d8ce] hidden md:block" />
-            <div className="space-y-8">
-              {process.map((p, i) => (
-                <div key={i} className="flex gap-6 items-start">
-                  <div className="relative z-10 w-12 h-12 bg-[#a67c52] rounded-full flex items-center justify-center shrink-0 shadow-md">
-                    <span className="text-white font-bold text-sm">{p.step}</span>
-                  </div>
-                  <div className="bg-[#f8f5f2] rounded-3xl p-6 flex-1 border border-[#e0d8ce]">
-                    <div className="flex items-center gap-2 mb-2">
-                      {p.icon}
-                      <h3 className="font-serif font-bold text-[#3e3e3e]">{p.title}</h3>
+            {/* Studio Workspace: 2-Column Split */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column (7 cols): Controls & Previews */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* Live Preview Stage */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#ede3d7] space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                      <h2 className="font-serif font-bold text-base text-gray-900">
+                        {currentConfig?.displayName || "Interactive Preview"}
+                      </h2>
                     </div>
-                    <p className="text-gray-500 text-sm leading-relaxed">{p.desc}</p>
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                      {currentConfig?.badge || "Bespoke Creation"}
+                    </span>
+                  </div>
+
+                  {/* Render Visual Preview depending on category */}
+                  {selectedCategory === "cakes" && (
+                    <CakeVisualPreview
+                      flavour={selectedOptions.flavour}
+                      weight={selectedOptions.weight}
+                      shape={selectedOptions.shape}
+                      tiers={selectedOptions.tiers}
+                      frosting={selectedOptions.frosting}
+                      colorPalette={selectedOptions.colorPalette}
+                      toppings={selectedOptions.toppings}
+                      cakeMessage={selectedOptions.cakeMessage || specifications.messageOnProduct}
+                    />
+                  )}
+
+                  {selectedCategory === "hampers" && (
+                    <HamperVisualPreview
+                      packagingType={selectedOptions.packagingType}
+                      theme={selectedOptions.theme}
+                      colorCombination={selectedOptions.colorCombination}
+                      selectedProducts={selectedProducts}
+                      recipientName={selectedOptions.recipientName || specifications.recipientName}
+                      onRemoveProduct={(id) => {
+                        setSelectedProducts((prev) => prev.filter((p) => (p._id || p.product || p.id) !== id));
+                      }}
+                    />
+                  )}
+
+                  {selectedCategory === "flowers" && (
+                    <BouquetVisualPreview
+                      flowerTypes={selectedOptions.flowerTypes || ["dutch_roses"]}
+                      bouquetSize={selectedOptions.bouquetSize}
+                      wrappingStyle={selectedOptions.wrappingStyle}
+                      ribbonColor={selectedOptions.ribbonColor}
+                      cardMessage={selectedOptions.cardMessage || specifications.messageOnProduct}
+                    />
+                  )}
+
+                  {(selectedCategory === "food" || selectedCategory === "personalized_gifts" || selectedCategory === "other") && (
+                    <div className="relative w-full aspect-16/9 rounded-2xl overflow-hidden shadow-inner border border-gray-200">
+                      <img
+                        src={currentConfig?.heroImage || "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800"}
+                        alt={currentConfig?.displayName}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6 text-white">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#e6cbb3]">
+                          {currentConfig?.tagline}
+                        </span>
+                        <h3 className="text-xl font-serif font-bold">{currentConfig?.displayName}</h3>
+                        <p className="text-xs text-gray-200 mt-1 max-w-lg">{currentConfig?.description}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Hamper Live Catalogue Picker (Only for Hampers) */}
+                {selectedCategory === "hampers" && (
+                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#ede3d7] space-y-4">
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                      <div>
+                        <h3 className="font-serif font-bold text-base text-gray-900">
+                          Select Available Products to Fill Your Hamper
+                        </h3>
+                        <p className="text-xs text-gray-400">
+                          Choose blooms, chocolates, and artisan goods from our real verified catalogue
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold text-[#a67c52] bg-[#a67c52]/10 px-3 py-1 rounded-full">
+                        {selectedProducts.length} added
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
+                      {catalogProducts.map((prod) => {
+                        const isAdded = selectedProducts.some((p) => (p._id || p.product || p.id) === prod._id);
+                        return (
+                          <div
+                            key={prod._id}
+                            onClick={() => toggleHamperProduct(prod)}
+                            className={`p-2.5 rounded-2xl border text-left cursor-pointer transition-all flex flex-col justify-between h-44 relative group ${
+                              isAdded
+                                ? "border-[#a67c52] bg-[#fdfaf7] shadow-xs ring-1 ring-[#a67c52]"
+                                : "border-gray-200 hover:border-gray-300 bg-white"
+                            }`}
+                          >
+                            <img
+                              src={prod.imageUrl || "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=300"}
+                              alt={prod.name}
+                              className="w-full h-24 object-cover rounded-xl mb-1.5"
+                            />
+                            <div>
+                              <p className="text-xs font-bold text-gray-800 line-clamp-1">{prod.name}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs font-bold text-[#a67c52]">₹{prod.price}</span>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                                  isAdded ? "bg-[#a67c52] text-white" : "bg-gray-100 text-gray-600"
+                                }`}>
+                                  {isAdded ? "Added" : "+ Add"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dynamic Configuration Controls Form */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#ede3d7] space-y-6">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="font-serif font-bold text-base text-gray-900">Customization Specifications</h3>
+                    <p className="text-xs text-gray-400">Configure flavours, portions, and bespoke finishes</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {(currentConfig?.fields || []).map((field) => {
+                      const userValue = selectedOptions[field.id];
+
+                      if (field.type === "select" || field.type === "radio") {
+                        return (
+                          <div key={field.id} className="space-y-1.5">
+                            <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
+                              <span>{field.label}</span>
+                              {field.required && <span className="text-red-500">*</span>}
+                            </label>
+                            <select
+                              value={userValue || ""}
+                              onChange={(e) => handleOptionChange(field.id, e.target.value)}
+                              className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50/60 focus:bg-white focus:outline-none focus:border-[#a67c52] text-xs text-gray-800"
+                            >
+                              {(field.options || []).map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label} {opt.price > 0 ? `(+₹${opt.price})` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      }
+
+                      if (field.type === "color") {
+                        return (
+                          <div key={field.id} className="space-y-1.5 md:col-span-2">
+                            <label className="text-xs font-bold text-gray-700 block">{field.label}</label>
+                            <div className="flex flex-wrap gap-2.5">
+                              {(field.options || []).map((opt) => {
+                                const isSelected = userValue === opt.value;
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => handleOptionChange(field.id, opt.value)}
+                                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                                      isSelected
+                                        ? "border-[#a67c52] bg-[#a67c52]/10 text-gray-900 ring-1 ring-[#a67c52]"
+                                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    <span
+                                      className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                                      style={{ backgroundColor: opt.previewColor || "#ddd" }}
+                                    />
+                                    <span>{opt.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (field.type === "multiselect") {
+                        const selectedList = Array.isArray(userValue) ? userValue : [];
+                        return (
+                          <div key={field.id} className="space-y-1.5 md:col-span-2">
+                            <label className="text-xs font-bold text-gray-700 block">{field.label}</label>
+                            <div className="flex flex-wrap gap-2">
+                              {(field.options || []).map((opt) => {
+                                const isChecked = selectedList.includes(opt.value);
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = isChecked
+                                        ? selectedList.filter((v) => v !== opt.value)
+                                        : [...selectedList, opt.value];
+                                      handleOptionChange(field.id, updated);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
+                                      isChecked
+                                        ? "border-[#a67c52] bg-[#a67c52] text-white shadow-xs"
+                                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    {opt.label} {opt.price > 0 ? `(+₹${opt.price})` : ""}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (field.type === "text" || field.type === "textarea") {
+                        return (
+                          <div key={field.id} className="space-y-1.5 md:col-span-2">
+                            <label className="text-xs font-bold text-gray-700 block">{field.label}</label>
+                            {field.type === "textarea" ? (
+                              <textarea
+                                rows={2}
+                                value={userValue || ""}
+                                placeholder={field.placeholder || ""}
+                                onChange={(e) => handleOptionChange(field.id, e.target.value)}
+                                className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50/60 focus:bg-white focus:outline-none focus:border-[#a67c52] text-xs text-gray-800"
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                value={userValue || ""}
+                                placeholder={field.placeholder || ""}
+                                onChange={(e) => handleOptionChange(field.id, e.target.value)}
+                                className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50/60 focus:bg-white focus:outline-none focus:border-[#a67c52] text-xs text-gray-800"
+                              />
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })}
+                  </div>
+
+                  {/* Packaging Options */}
+                  {currentConfig?.packagingOptions && currentConfig.packagingOptions.length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-gray-100">
+                      <label className="text-xs font-bold text-gray-700 block">Select Luxury Packaging</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {currentConfig.packagingOptions.map((pkg) => {
+                          const isSelected = packagingOptionName === pkg.name;
+                          return (
+                            <button
+                              key={pkg.name}
+                              type="button"
+                              onClick={() => setPackagingOptionName(pkg.name)}
+                              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                                isSelected
+                                  ? "border-[#a67c52] bg-[#fbf8f5] ring-1 ring-[#a67c52]"
+                                  : "border-gray-200 bg-white hover:border-gray-300"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-bold text-gray-900 line-clamp-1">{pkg.name}</span>
+                                <span className="text-xs font-bold text-[#a67c52]">
+                                  {pkg.price > 0 ? `+₹${pkg.price}` : "Free"}
+                                </span>
+                              </div>
+                              {pkg.description && (
+                                <p className="text-[10px] text-gray-400 line-clamp-2">{pkg.description}</p>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Reference Images Upload System */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#ede3d7] space-y-4">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="font-serif font-bold text-base text-gray-900">
+                      Inspiration & Reference Images
+                    </h3>
+                    <p className="text-xs text-gray-400">
+                      Upload Pinterest moodboards, color palettes, or screenshot references to guide our creators
+                    </p>
+                  </div>
+                  <ReferenceImageUploader
+                    images={referenceImages}
+                    onImagesChange={setReferenceImages}
+                    maxImages={5}
+                  />
+                </div>
+
+                {/* Delivery Date & Address Details */}
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#ede3d7] space-y-4">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h3 className="font-serif font-bold text-base text-gray-900">Delivery Information</h3>
+                    <p className="text-xs text-gray-400">Specify when and where your creation should be delivered</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-gray-700">Target Delivery Date</label>
+                      <input
+                        type="date"
+                        value={deliveryDate}
+                        onChange={(e) => setDeliveryDate(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-[#a67c52]"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-gray-700">Delivery City</label>
+                      <input
+                        type="text"
+                        value={deliveryAddress.city}
+                        onChange={(e) => setDeliveryAddress({ ...deliveryAddress, city: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-[#a67c52]"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="font-bold text-gray-700">House / Apartment / Street Address</label>
+                      <input
+                        type="text"
+                        placeholder="House / Flat No., Landmark..."
+                        value={deliveryAddress.house}
+                        onChange={(e) => setDeliveryAddress({ ...deliveryAddress, house: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-[#a67c52]"
+                      />
+                    </div>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Right Column (4 cols): Sticky Price Breakdown & Submit */}
+              <div className="lg:col-span-4">
+                <LivePriceSidebar
+                  pricing={pricing}
+                  loading={calculatingPrice}
+                  submitting={submitting}
+                  onSubmit={handleSubmit}
+                  onSaveDraft={() => {
+                    localStorage.setItem("saved_studio_draft", JSON.stringify({
+                      category: selectedCategory,
+                      selectedOptions,
+                      selectedProducts,
+                    }));
+                    toast.success("Draft saved to this device!");
+                  }}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        ) : (
+          /* My Requests Tab View */
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+              <div>
+                <h2 className="text-2xl font-serif font-bold text-gray-900">My Custom Creations</h2>
+                <p className="text-xs text-gray-500">Track artisan reviews, view official quotations, and monitor production</p>
+              </div>
+              <button
+                onClick={fetchUserRequests}
+                className="px-3.5 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <RefreshCw size={14} /> Refresh Requests
+              </button>
+            </div>
 
-      {/* ── IMPORTANT TIPS ────────────────────────── */}
-      <section className="px-6 pb-16">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <span className="text-[#a67c52] uppercase tracking-widest text-xs font-bold block mb-3">Pro Tips</span>
-            <h2 className="text-3xl font-serif text-[#3e3e3e]">Tips for the Best Custom Order</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {[
-              { icon: '🌸', tip: 'Order early for peak seasons', body: 'Valentine\'s Day, Mother\'s Day, Diwali, and New Year slots fill up fast. Book at least 72 hours in advance.' },
-              { icon: '📸', tip: 'Share reference photos', body: 'A picture is worth a thousand words. Send us reference photos of colour palettes or styles you love.' },
-              { icon: '💬', tip: 'Be specific about your occasion', body: 'Telling us the occasion (birthday, anniversary, condolence) helps us tailor the arrangement perfectly.' },
-              { icon: '💰', tip: 'Mention your budget upfront', body: 'We\'ll work our magic within your budget. Don\'t be shy — there\'s something beautiful for every price point.' },
-              { icon: '🌿', tip: 'Ask about seasonal flowers', body: 'Seasonal blooms are fresher and more affordable. Ask us what\'s in season for the best results.' },
-              { icon: '📅', tip: 'Plan ahead for events', body: 'For weddings, corporate events, or large parties, contact us at least 1–2 weeks in advance.' },
-            ].map((t, i) => (
-              <div key={i} className="bg-white rounded-3xl border border-[#e0d8ce] p-6 flex gap-4 hover:shadow-md transition-shadow">
-                <span className="text-3xl shrink-0">{t.icon}</span>
+            {myRequests.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-xs space-y-4">
+                <div className="w-16 h-16 rounded-full bg-[#f8f5f2] text-[#a67c52] flex items-center justify-center mx-auto">
+                  <Sparkles size={28} />
+                </div>
                 <div>
-                  <p className="font-semibold text-[#3e3e3e] mb-1">{t.tip}</p>
-                  <p className="text-gray-500 text-sm">{t.body}</p>
+                  <h3 className="text-lg font-serif font-bold text-gray-900">No Custom Requests Yet</h3>
+                  <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1">
+                    You haven't submitted any bespoke design requests yet. Use our studio to design something special!
+                  </p>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CUSTOM FAQ ────────────────────────────── */}
-      <section className="px-6 pb-16 bg-white">
-        <div className="max-w-4xl mx-auto py-16">
-          <div className="text-center mb-10">
-            <span className="text-[#a67c52] uppercase tracking-widest text-xs font-bold block mb-3">Questions</span>
-            <h2 className="text-3xl font-serif text-[#3e3e3e]">Customization FAQs</h2>
-          </div>
-          <div className="space-y-4">
-            {faqs.map((f, i) => (
-              <div key={i} className="rounded-3xl border border-[#e0d8ce] overflow-hidden bg-[#f8f5f2]">
                 <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full px-7 py-5 flex items-center justify-between text-left"
+                  onClick={() => setActiveTab("STUDIO")}
+                  className="px-5 py-2.5 rounded-2xl bg-[#a67c52] text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all cursor-pointer"
                 >
-                  <span className="font-serif font-semibold text-[#3e3e3e]">{f.q}</span>
-                  <ChevronRight size={18} className={`text-[#a67c52] transition-transform duration-300 shrink-0 ml-4 ${openFaq === i ? 'rotate-90' : ''}`} />
+                  Start Customizing Now
                 </button>
-                <div className={`px-7 transition-all duration-300 ease-in-out ${openFaq === i ? 'pb-5 max-h-40 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                  <p className="text-gray-600 text-sm leading-relaxed border-t border-[#e0d8ce] pt-4">{f.a}</p>
-                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {myRequests.map((req) => (
+                  <div
+                    key={req._id}
+                    onClick={() => setSelectedRequestModal(req)}
+                    className="bg-white rounded-3xl p-5 border border-[#ede3d7] shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-[#a67c52] uppercase tracking-wider">
+                          {req.requestNumber || "CUSTOM ORDER"}
+                        </span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 uppercase">
+                          {req.status?.replace("_", " ")}
+                        </span>
+                      </div>
 
-      {/* ── NOTICE ────────────────────────────────── */}
-      <section className="px-6 pb-16">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-4 bg-amber-50 border border-amber-200 rounded-3xl p-6 mb-10">
-            <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={22} />
-            <div>
-              <p className="font-semibold text-amber-800 mb-1">Please Note</p>
-              <p className="text-amber-700 text-sm leading-relaxed">
-                Custom and personalized orders cannot be cancelled or refunded once production has started. Please review your order details carefully before confirming. A 50% advance is non-refundable for all custom orders.
-              </p>
-            </div>
-          </div>
+                      <h4 className="text-base font-serif font-bold text-gray-900 capitalize group-hover:text-[#a67c52] transition-colors">
+                        {req.category} Customization
+                      </h4>
 
-          {/* CTA */}
-          <div className="bg-gradient-to-br from-[#3e3e3e] to-[#2d2d2d] rounded-[2rem] p-10 text-center text-white relative overflow-hidden">
-            <div className="absolute inset-0 opacity-5">
-              <Palette size={300} className="absolute -right-10 -bottom-10" />
-            </div>
-            <Heart size={32} className="text-[#c8a97e] mx-auto mb-4" />
-            <h3 className="text-2xl font-serif mb-3">Ready to Create Something Special?</h3>
-            <p className="text-white/60 mb-8 max-w-md mx-auto">
-              Tell us your dream — we'll bring it to life with care, creativity, and a whole lot of love.
-            </p>
-            <div className="flex justify-center gap-4 flex-wrap">
-              <Link to="/contactus" className="bg-[#a67c52] text-white px-7 py-3 rounded-full font-bold hover:bg-[#c8a97e] transition-all shadow-lg">
-                Start Custom Order
-              </Link>
-              <Link to="/faq" className="bg-white/10 text-white border border-white/20 px-7 py-3 rounded-full font-bold hover:bg-white/20 transition-all">
-                View FAQ
-              </Link>
-            </div>
+                      <p className="text-xs text-gray-500 line-clamp-2">
+                        {req.specifications?.messageOnProduct || req.specifications?.designDescription || "Custom requested creation"}
+                      </p>
+                    </div>
+
+                    <div className="border-t border-gray-100 pt-3 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[10px] text-gray-400 block uppercase font-bold">
+                          {req.activeQuote ? "Official Quote" : "Estimated Total"}
+                        </span>
+                        <span className="text-base font-serif font-bold text-gray-900">
+                          ₹{req.finalQuotedPrice || req.estimatedPrice}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-[#a67c52] font-semibold text-xs group-hover:translate-x-0.5 transition-transform">
+                        <span>Details & Quote</span>
+                        <ChevronRight size={14} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      </section>
+        )}
+      </main>
+
+      {/* AI Customization Drawer Modal */}
+      <AICustomizationDrawer
+        isOpen={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        initialCategory={selectedCategory}
+        onApplyBrief={handleApplyAIBrief}
+      />
+
+      {/* Request Details & Quotation Modal */}
+      {selectedRequestModal && (
+        <CustomizationRequestDetailModal
+          request={selectedRequestModal}
+          isOpen={Boolean(selectedRequestModal)}
+          onClose={() => setSelectedRequestModal(null)}
+          onRefresh={fetchUserRequests}
+          onProceedToPay={handleProceedToPay}
+        />
+      )}
 
       <ProductsFooter />
     </div>

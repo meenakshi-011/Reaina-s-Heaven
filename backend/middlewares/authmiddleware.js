@@ -29,3 +29,15 @@ export const isLoggedIn = async (req, res, next) => {
     res.status(401).json({ message: "No token" });
   }
 };
+
+export const isAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  const adminRoles = ["admin", "SUPER_ADMIN", "OPERATIONS_MANAGER"];
+  if (adminRoles.includes(req.user.role)) {
+    return next();
+  }
+  return res.status(403).json({ message: "Access denied. Admin authorization required." });
+};
+
